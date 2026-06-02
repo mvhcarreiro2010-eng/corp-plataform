@@ -9,10 +9,9 @@ export async function GET(req: NextRequest) {
 
   const isAdmin = ['ADMIN', 'HR'].includes(session.user.role)
 
-  const segFilter = {
-    published: true,
-    ...(isAdmin ? {} : buildSegFilter(session.user)),
-  }
+  const segFilter = isAdmin
+    ? {}
+    : { published: true, ...buildSegFilter(session.user) }
 
   const avaliacoes = await prisma.avaliacao.findMany({
     where: segFilter,
