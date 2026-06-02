@@ -22,6 +22,7 @@ import {
   ShoppingBag,
   UsersRound,
   MessagesSquare,
+  Bell,
 } from 'lucide-react'
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
@@ -29,6 +30,7 @@ import { useSession } from 'next-auth/react'
 
 const navItems = [
   { href: '/feed', label: 'Feed', icon: Home },
+  { href: '/comunicados', label: 'Comunicados', icon: Bell },
   { href: '/wiki', label: 'Wiki', icon: BookOpen },
   { href: '/comunidade', label: 'Comunidade', icon: MessageSquare },
   { href: '/aprendizado', label: 'Aprendizado', icon: GraduationCap },
@@ -39,6 +41,7 @@ const navItems = [
 ]
 
 const adminItems = [
+  { href: '/admin/comunicados', label: 'Comunicados', icon: Bell },
   { href: '/admin/posts', label: 'Posts', icon: Newspaper },
   { href: '/admin/wiki', label: 'Categorias Wiki', icon: FolderOpen },
   { href: '/admin/cursos', label: 'Cursos', icon: BookMarked },

@@ -30,6 +30,14 @@ export default function WikiArticlePage() {
         if (!r.ok) { setNotFound(true); return }
         const data = await r.json()
         setArticle(data)
+        // Track view
+        if (data?.id) {
+          fetch('/api/wiki/view', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ pageId: data.id }),
+          }).catch(() => {})
+        }
       })
       .finally(() => setLoading(false))
   }, [params.slug])

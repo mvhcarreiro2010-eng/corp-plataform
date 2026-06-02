@@ -90,6 +90,10 @@ model User {
   turmas            TurmaUser[]
   presencas         TreinamentoPresenca[]
   resgates          Resgate[]
+  comunicados       Comunicado[]        @relation("ComunicadoAuthor")
+  comunicadoAceites ComunicadoAceite[]
+  humorCheckIns     HumorCheckIn[]
+  wikiViews         WikiPageView[]
 
   @@map("users")
 }
@@ -171,20 +175,21 @@ model WikiCategory {
 }
 
 model WikiPage {
-  id         String       @id @default(cuid())
+  id         String         @id @default(cuid())
   title      String
-  slug       String       @unique
-  content    String       @db.Text
+  slug       String         @unique
+  content    String         @db.Text
   excerpt    String?
   categoryId String
-  category   WikiCategory @relation(fields: [categoryId], references: [id])
+  category   WikiCategory   @relation(fields: [categoryId], references: [id])
   authorId   String
-  published  Boolean      @default(true)
-  views      Int          @default(0)
-  buIds      String[]     @default([])
-  roleFilter String[]     @default([])
-  updatedAt  DateTime     @updatedAt
-  createdAt  DateTime     @default(now())
+  published  Boolean        @default(true)
+  views      Int            @default(0)
+  buIds      String[]       @default([])
+  roleFilter String[]       @default([])
+  updatedAt  DateTime       @updatedAt
+  createdAt  DateTime       @default(now())
+  pageViews  WikiPageView[]
 
   @@map("wiki_pages")
 }
@@ -472,6 +477,7 @@ model Avaliacao {
   tempoPorQuestao Int?
   tempoTotal      Int?
   maxTentativas   Int         @default(1)
+  testeRapido     Boolean     @default(false)
   published       Boolean     @default(false)
   buIds           String[]    @default([])
   roleFilter      String[]    @default([])
@@ -548,6 +554,70 @@ enum ResgateStatus {
   PENDENTE
   APROVADO
   REJEITADO
+}
+
+// ============================================================
+// COMUNICADOS URGENTES
+// ============================================================
+
+model Comunicado {
+  id            String             @id @default(cuid())
+  title         String
+  content       String             @db.Text
+  urgente       Boolean            @default(false)
+  requireAceite Boolean            @default(false)
+  buIds         String[]           @default([])
+  roleFilter    String[]           @default([])
+  published     Boolean            @default(false)
+  authorId      String
+  author        User               @relation("ComunicadoAuthor", fields: [authorId], references: [id])
+  aceites       ComunicadoAceite[]
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  @@map("comunicados")
+}
+
+model ComunicadoAceite {
+  comunicadoId String
+  userId       String
+  aceitadoEm  DateTime   @default(now())
+  comunicado  Comunicado @relation(fields: [comunicadoId], references: [id], onDelete: Cascade)
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([comunicadoId, userId])
+  @@map("comunicado_aceites")
+}
+
+// ============================================================
+// HUMOR DIÁRIO
+// ============================================================
+
+model HumorCheckIn {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  humor     Int      // 1=Péssimo 2=Ruim 3=Ok 4=Bom 5=Ótimo
+  data      String   // YYYY-MM-DD
+  createdAt DateTime @default(now())
+
+  @@unique([userId, data])
+  @@map("humor_checkins")
+}
+
+// ============================================================
+// RASTREIO DE VISUALIZAÇÕES WIKI
+// ============================================================
+
+model WikiPageView {
+  userId   String
+  pageId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  page     WikiPage @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  viewedAt DateTime @default(now())
+
+  @@id([userId, pageId])
+  @@map("wiki_page_views")
 }
 
 // ============================================================
