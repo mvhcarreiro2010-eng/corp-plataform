@@ -20,6 +20,11 @@
 .fade-in { animation: fadeIn 0.2s ease-out; }
 .animate-pulse-ring { animation: pulse-ring 2s infinite; }
 
+/* Safe area para iPhone (home indicator) */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
 /* Scroll customizado */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }

@@ -25,7 +25,7 @@ function useDebounce<T>(value: T, delay: number): T {
   return debounced
 }
 
-export function SearchBar() {
+export function SearchBar({ autoFocus, onClose }: { autoFocus?: boolean; onClose?: () => void } = {}) {
   const router = useRouter()
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<SearchResults | null>(null)
@@ -33,6 +33,11 @@ export function SearchBar() {
   const [open, setOpen] = useState(false)
   const debouncedQ = useDebounce(query, 300)
   const wrapperRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (autoFocus) inputRef.current?.focus()
+  }, [autoFocus])
 
   // Fetch on debounced query change
   useEffect(() => {
@@ -62,7 +67,7 @@ export function SearchBar() {
   const hasResults = results && (results.wiki.length + results.courses.length + results.avaliacoes.length) > 0
   const isEmpty = results && !hasResults && !results.tagSuggestions.length
 
-  const clear = () => { setQuery(''); setResults(null); setOpen(false) }
+  const clear = () => { setQuery(''); setResults(null); setOpen(false); onClose?.() }
 
   const handleTagClick = (tag: string) => {
     setQuery(tag)
@@ -73,6 +78,7 @@ export function SearchBar() {
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
         <input
+          ref={inputRef}
           value={query}
           onChange={e => { setQuery(e.target.value); if (e.target.value.length >= 2) setOpen(true) }}
           onFocus={() => results && setOpen(true)}

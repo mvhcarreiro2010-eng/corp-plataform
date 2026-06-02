@@ -54,7 +54,7 @@ export function PostCard({ post, onLike }: { post: Post; onLike: (id: string) =>
         </div>
       )}
 
-      <div className="p-5">
+      <div className="p-4 md:p-5">
         {/* Header do post */}
         <div className="flex items-start gap-3 mb-4">
           <Avatar className="w-10 h-10 shrink-0">

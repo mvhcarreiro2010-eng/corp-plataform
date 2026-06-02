@@ -1,6 +1,6 @@
 'use client'
 
-import { Bell, LogOut, User, ChevronDown, X, Pin, Loader2 } from 'lucide-react'
+import { Bell, LogOut, User, ChevronDown, X, Pin, Loader2, Search, Building2 } from 'lucide-react'
 import { SearchBar } from './SearchBar'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -38,6 +38,7 @@ export function Header() {
   const [showNotif, setShowNotif] = useState(false)
   const [notifs, setNotifs] = useState<Notif[]>([])
   const [loadingNotifs, setLoadingNotifs] = useState(false)
+  const [showMobileSearch, setShowMobileSearch] = useState(false)
   const notifRef = useRef<HTMLDivElement>(null)
 
   const initials = session?.user?.name
@@ -72,153 +73,202 @@ export function Header() {
   }, [showNotif])
 
   return (
-    <header className="h-16 bg-white border-b border-gray-200 flex items-center px-6 gap-4 sticky top-0 z-20">
-      <SearchBar />
-
-      <div className="flex items-center gap-3 ml-auto">
-        {/* XP Badge */}
-        {session?.user && (
-          <div className="hidden md:flex flex-col items-end gap-0.5">
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs font-bold text-amber-600">⭐ Nível {session.user.level}</span>
-              <span className="text-xs text-gray-500">{session.user.xp} XP</span>
-            </div>
-            <Progress value={progress} className="w-20 h-1.5" />
+    <>
+      <header className="h-14 md:h-16 bg-white border-b border-gray-200 flex items-center px-4 md:px-6 gap-3 sticky top-0 z-20">
+        {/* Mobile: Logo */}
+        <Link href="/feed" className="md:hidden flex items-center gap-2 shrink-0">
+          <div className="w-7 h-7 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
+            <Building2 className="w-4 h-4 text-white" />
           </div>
-        )}
+          <span className="font-bold text-gray-900 text-base">CorpHub</span>
+        </Link>
 
-        {/* Notificações */}
-        <div className="relative" ref={notifRef}>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="relative"
-            onClick={() => showNotif ? setShowNotif(false) : openNotif()}
-          >
-            <Bell className="w-5 h-5 text-gray-600" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
-          </Button>
-
-          {showNotif && (
-            <div className="absolute right-0 top-12 w-80 bg-white rounded-xl shadow-xl border border-gray-200 z-50 animate-in fade-in slide-in-from-top-2">
-              {/* Header */}
-              <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-                <div className="flex items-center gap-2">
-                  <Bell className="w-4 h-4 text-gray-500" />
-                  <span className="font-semibold text-sm text-gray-900">Comunicados</span>
-                </div>
-                <button
-                  onClick={() => setShowNotif(false)}
-                  className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              {/* Lista */}
-              <div className="max-h-96 overflow-y-auto divide-y divide-gray-50">
-                {loadingNotifs ? (
-                  <div className="flex justify-center py-10">
-                    <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
-                  </div>
-                ) : notifs.length === 0 ? (
-                  <div className="text-center py-10">
-                    <p className="text-2xl mb-1">📢</p>
-                    <p className="text-sm text-gray-400">Nenhum comunicado ainda</p>
-                  </div>
-                ) : (
-                  notifs.map((n) => (
-                    <Link
-                      key={n.id}
-                      href="/feed"
-                      onClick={() => setShowNotif(false)}
-                      className="block px-4 py-3 hover:bg-gray-50 transition-colors"
-                    >
-                      <div className="flex items-start gap-2">
-                        {n.pinned && (
-                          <Pin className="w-3 h-3 text-blue-500 shrink-0 mt-1" />
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between gap-2 mb-0.5">
-                            <p className="text-xs font-medium text-gray-500 truncate">{n.author.name}</p>
-                            <p className="text-xs text-gray-400 shrink-0">{timeAgo(n.createdAt)}</p>
-                          </div>
-                          <p className="text-sm text-gray-800 line-clamp-2 leading-snug"
-                            dangerouslySetInnerHTML={{ __html: n.content.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim() }}
-                          />
-                          {n._count.comments > 0 && (
-                            <p className="text-xs text-gray-400 mt-1">
-                              💬 {n._count.comments} comentário{n._count.comments !== 1 ? 's' : ''}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    </Link>
-                  ))
-                )}
-              </div>
-
-              {/* Footer */}
-              <div className="px-4 py-2.5 border-t border-gray-100 bg-gray-50 rounded-b-xl">
-                <Link
-                  href="/feed"
-                  onClick={() => setShowNotif(false)}
-                  className="text-xs text-blue-600 hover:underline font-medium"
-                >
-                  Ver todos os comunicados →
-                </Link>
-              </div>
-            </div>
-          )}
+        {/* Desktop: Search bar */}
+        <div className="hidden md:flex flex-1">
+          <SearchBar />
         </div>
 
-        {/* Avatar + Menu */}
-        <DropdownMenu.Root>
-          <DropdownMenu.Trigger asChild>
-            <button className="flex items-center gap-2 rounded-lg p-1.5 hover:bg-gray-100 transition-colors outline-none">
-              <Avatar className="w-8 h-8">
-                <AvatarImage src={session?.user?.avatar ?? undefined} />
-                <AvatarFallback className="text-xs">{initials}</AvatarFallback>
-              </Avatar>
-              <div className="hidden md:block text-left">
-                <p className="text-sm font-medium text-gray-900 leading-none">{session?.user?.name}</p>
-                <span
-                  className={`text-xs px-1.5 py-0.5 rounded-full ${getRoleBadgeColor(session?.user?.role ?? '')}`}
-                >
-                  {getRoleLabel(session?.user?.role ?? '')}
-                </span>
-              </div>
-              <ChevronDown className="w-3 h-3 text-gray-400 hidden md:block" />
-            </button>
-          </DropdownMenu.Trigger>
+        {/* Mobile: search button (opens overlay) */}
+        <button
+          className="md:hidden ml-auto p-2 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
+          onClick={() => setShowMobileSearch(true)}
+        >
+          <Search className="w-5 h-5" />
+        </button>
 
-          <DropdownMenu.Portal>
-            <DropdownMenu.Content
-              className="min-w-[200px] bg-white rounded-xl shadow-lg border border-gray-200 p-1.5 z-50 animate-in fade-in slide-in-from-top-2"
-              align="end"
-              sideOffset={8}
+        <div className="flex items-center gap-2 md:gap-3 md:ml-auto">
+          {/* XP Badge — desktop only */}
+          {session?.user && (
+            <div className="hidden md:flex flex-col items-end gap-0.5">
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-bold text-amber-600">⭐ Nível {session.user.level}</span>
+                <span className="text-xs text-gray-500">{session.user.xp} XP</span>
+              </div>
+              <Progress value={progress} className="w-20 h-1.5" />
+            </div>
+          )}
+
+          {/* Notificações */}
+          <div className="relative" ref={notifRef}>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="relative w-9 h-9"
+              onClick={() => showNotif ? setShowNotif(false) : openNotif()}
             >
-              <DropdownMenu.Item asChild>
-                <Link
-                  href="/perfil"
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-gray-100 cursor-pointer outline-none"
-                >
-                  <User className="w-4 h-4" />
-                  Meu Perfil
-                </Link>
-              </DropdownMenu.Item>
-              <DropdownMenu.Separator className="my-1 border-t border-gray-100" />
-              <DropdownMenu.Item
-                className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-red-600 hover:bg-red-50 cursor-pointer outline-none"
-                onSelect={() => signOut({ callbackUrl: '/entrar' })}
+              <Bell className="w-5 h-5 text-gray-600" />
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
+            </Button>
+
+            {showNotif && (
+              <div className="absolute right-0 top-12 w-80 max-w-[calc(100vw-1rem)] bg-white rounded-xl shadow-xl border border-gray-200 z-50 animate-in fade-in slide-in-from-top-2">
+                {/* Header */}
+                <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+                  <div className="flex items-center gap-2">
+                    <Bell className="w-4 h-4 text-gray-500" />
+                    <span className="font-semibold text-sm text-gray-900">Comunicados</span>
+                  </div>
+                  <button
+                    onClick={() => setShowNotif(false)}
+                    className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Lista */}
+                <div className="max-h-80 overflow-y-auto divide-y divide-gray-50">
+                  {loadingNotifs ? (
+                    <div className="flex justify-center py-10">
+                      <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+                    </div>
+                  ) : notifs.length === 0 ? (
+                    <div className="text-center py-10">
+                      <p className="text-2xl mb-1">📢</p>
+                      <p className="text-sm text-gray-400">Nenhum comunicado ainda</p>
+                    </div>
+                  ) : (
+                    notifs.map((n) => (
+                      <Link
+                        key={n.id}
+                        href="/feed"
+                        onClick={() => setShowNotif(false)}
+                        className="block px-4 py-3 hover:bg-gray-50 transition-colors"
+                      >
+                        <div className="flex items-start gap-2">
+                          {n.pinned && (
+                            <Pin className="w-3 h-3 text-blue-500 shrink-0 mt-1" />
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-2 mb-0.5">
+                              <p className="text-xs font-medium text-gray-500 truncate">{n.author.name}</p>
+                              <p className="text-xs text-gray-400 shrink-0">{timeAgo(n.createdAt)}</p>
+                            </div>
+                            <p className="text-sm text-gray-800 line-clamp-2 leading-snug"
+                              dangerouslySetInnerHTML={{ __html: n.content.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim() }}
+                            />
+                            {n._count.comments > 0 && (
+                              <p className="text-xs text-gray-400 mt-1">
+                                💬 {n._count.comments} comentário{n._count.comments !== 1 ? 's' : ''}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </Link>
+                    ))
+                  )}
+                </div>
+
+                {/* Footer */}
+                <div className="px-4 py-2.5 border-t border-gray-100 bg-gray-50 rounded-b-xl">
+                  <Link
+                    href="/feed"
+                    onClick={() => setShowNotif(false)}
+                    className="text-xs text-blue-600 hover:underline font-medium"
+                  >
+                    Ver todos os comunicados →
+                  </Link>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Avatar + Menu */}
+          <DropdownMenu.Root>
+            <DropdownMenu.Trigger asChild>
+              <button className="flex items-center gap-2 rounded-lg p-1.5 hover:bg-gray-100 transition-colors outline-none">
+                <Avatar className="w-8 h-8">
+                  <AvatarImage src={session?.user?.avatar ?? undefined} />
+                  <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+                </Avatar>
+                <div className="hidden md:block text-left">
+                  <p className="text-sm font-medium text-gray-900 leading-none">{session?.user?.name}</p>
+                  <span
+                    className={`text-xs px-1.5 py-0.5 rounded-full ${getRoleBadgeColor(session?.user?.role ?? '')}`}
+                  >
+                    {getRoleLabel(session?.user?.role ?? '')}
+                  </span>
+                </div>
+                <ChevronDown className="w-3 h-3 text-gray-400 hidden md:block" />
+              </button>
+            </DropdownMenu.Trigger>
+
+            <DropdownMenu.Portal>
+              <DropdownMenu.Content
+                className="min-w-[200px] bg-white rounded-xl shadow-lg border border-gray-200 p-1.5 z-50 animate-in fade-in slide-in-from-top-2"
+                align="end"
+                sideOffset={8}
               >
-                <LogOut className="w-4 h-4" />
-                Sair
-              </DropdownMenu.Item>
-            </DropdownMenu.Content>
-          </DropdownMenu.Portal>
-        </DropdownMenu.Root>
-      </div>
-    </header>
+                {/* Mobile: show XP info */}
+                {session?.user && (
+                  <div className="md:hidden px-3 py-2 mb-1 border-b border-gray-100">
+                    <p className="text-xs font-semibold text-gray-900">{session.user.name}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-xs font-bold text-amber-600">⭐ Nível {session.user.level}</span>
+                      <span className="text-xs text-gray-500">{session.user.xp} XP</span>
+                    </div>
+                    <Progress value={progress} className="w-full h-1.5 mt-1" />
+                  </div>
+                )}
+                <DropdownMenu.Item asChild>
+                  <Link
+                    href="/perfil"
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-gray-100 cursor-pointer outline-none"
+                  >
+                    <User className="w-4 h-4" />
+                    Meu Perfil
+                  </Link>
+                </DropdownMenu.Item>
+                <DropdownMenu.Separator className="my-1 border-t border-gray-100" />
+                <DropdownMenu.Item
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-red-600 hover:bg-red-50 cursor-pointer outline-none"
+                  onSelect={() => signOut({ callbackUrl: '/entrar' })}
+                >
+                  <LogOut className="w-4 h-4" />
+                  Sair
+                </DropdownMenu.Item>
+              </DropdownMenu.Content>
+            </DropdownMenu.Portal>
+          </DropdownMenu.Root>
+        </div>
+      </header>
+
+      {/* Mobile search overlay */}
+      {showMobileSearch && (
+        <div className="md:hidden fixed inset-0 z-50 bg-white flex flex-col">
+          <div className="flex items-center gap-3 px-4 h-14 border-b border-gray-200">
+            <div className="flex-1">
+              <SearchBar autoFocus onClose={() => setShowMobileSearch(false)} />
+            </div>
+            <button
+              onClick={() => setShowMobileSearch(false)}
+              className="p-2 text-gray-500"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      )}
+    </>
   )
 }
