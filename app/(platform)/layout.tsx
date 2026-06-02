@@ -3,6 +3,7 @@ import { Header } from '@/components/layout/Header'
 import { MobileNav } from '@/components/layout/MobileNav'
 import { Chatbot } from '@/components/layout/Chatbot'
 import { PlatformChecks } from '@/components/layout/PlatformChecks'
+import { PopupTest } from '@/components/layout/PopupTest'
 
 export default function PlatformLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -21,6 +22,8 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
       {/* Bottom nav: mobile only */}
       <MobileNav />
       <Chatbot />
+      {/* Mandatory popup test on platform entry */}
+      <PopupTest />
     </div>
   )
 }

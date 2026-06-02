@@ -10,8 +10,8 @@ export async function GET(req: NextRequest) {
   const isAdmin = ['ADMIN', 'HR'].includes(session.user.role)
 
   const segFilter = isAdmin
-    ? {}
-    : { published: true, ...buildSegFilter(session.user) }
+    ? { testeRapido: false }
+    : { published: true, testeRapido: false, ...buildSegFilter(session.user) }
 
   const avaliacoes = await prisma.avaliacao.findMany({
     where: segFilter,
@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
   if (!['ADMIN', 'HR'].includes(session.user.role)) return NextResponse.json({ error: 'Sem permissão' }, { status: 403 })
 
   const body = await req.json()
-  const { title, description, questoesExibir, tempoPorQuestao, tempoTotal, maxTentativas, buIds, roleFilter, userIds, tags } = body
+  const { title, description, questoesExibir, tempoPorQuestao, tempoTotal, maxTentativas, buIds, roleFilter, userIds, tags, testeRapido } = body
 
   if (!title?.trim()) return NextResponse.json({ error: 'Título obrigatório' }, { status: 400 })
 
@@ -47,6 +47,7 @@ export async function POST(req: NextRequest) {
       roleFilter: roleFilter ?? [],
       userIds: userIds ?? [],
       tags: tags ?? [],
+      testeRapido: testeRapido ?? false,
     },
   })
 

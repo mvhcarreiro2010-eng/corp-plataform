@@ -10,7 +10,7 @@ import { VisibilityConfig, VisibilityValue } from '@/components/admin/Visibility
 
 interface Avaliacao {
   id: string; title: string; description: string | null; questoesExibir: number
-  maxTentativas: number; published: boolean; createdAt: string
+  maxTentativas: number; published: boolean; createdAt: string; testeRapido: boolean
   buIds: string[]; roleFilter: string[]; userIds: string[]
   _count: { questoes: number }
 }
@@ -47,7 +47,8 @@ export default function AdminAvaliacoesPage() {
   const [savingVis, setSavingVis] = useState(false)
 
   const load = async () => {
-    const res = await fetch('/api/avaliacoes')
+    // Admin-specific endpoint shows all (including testeRapido and drafts)
+    const res = await fetch('/api/admin/avaliacoes')
     const data = await res.json()
     setItems(Array.isArray(data) ? data : [])
     setLoading(false)
@@ -87,11 +88,11 @@ export default function AdminAvaliacoesPage() {
 
     setSavingQuick(true)
     try {
-      // 1. cria avaliação
+      // 1. cria avaliação como testeRapido (popup obrigatório na entrada)
       const resAv = await fetch('/api/avaliacoes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: quick.title.trim(), questoesExibir: 1, maxTentativas: 3 }),
+        body: JSON.stringify({ title: quick.title.trim(), questoesExibir: 1, maxTentativas: 3, testeRapido: true }),
       })
       if (!resAv.ok) { setQuickError('Erro ao criar avaliação.'); return }
       const av = await resAv.json()
@@ -310,6 +311,11 @@ export default function AdminAvaliacoesPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <span className="font-medium text-gray-900">{av.title}</span>
+                    {av.testeRapido && (
+                      <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <Zap className="w-3 h-3" />Popup
+                      </span>
+                    )}
                     {av.published
                       ? <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Publicada</span>
                       : <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">Rascunho</span>
