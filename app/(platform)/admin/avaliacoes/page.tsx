@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { ClipboardList, Plus, Trash2, BookOpen, Eye, EyeOff, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { TagInput } from '@/components/ui/TagInput'
 
 interface Avaliacao {
   id: string; title: string; description: string | null; questoesExibir: number
@@ -17,6 +18,7 @@ export default function AdminAvaliacoesPage() {
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ title: '', description: '', questoesExibir: 10, tempoPorQuestao: '', tempoTotal: '', maxTentativas: 1 })
+  const [formTags, setFormTags] = useState<string[]>([])
   const [saving, setSaving] = useState(false)
 
   const load = async () => {
@@ -36,6 +38,7 @@ export default function AdminAvaliacoesPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         ...form,
+        tags: formTags,
         tempoPorQuestao: form.tempoPorQuestao ? Number(form.tempoPorQuestao) : null,
         tempoTotal: form.tempoTotal ? Number(form.tempoTotal) : null,
       }),
@@ -43,6 +46,7 @@ export default function AdminAvaliacoesPage() {
     setSaving(false)
     setShowForm(false)
     setForm({ title: '', description: '', questoesExibir: 10, tempoPorQuestao: '', tempoTotal: '', maxTentativas: 1 })
+    setFormTags([])
     load()
   }
 
@@ -105,6 +109,11 @@ export default function AdminAvaliacoesPage() {
               <label className="text-xs font-medium text-gray-600 mb-1 block">Tempo total (seg, vazio = sem limite)</label>
               <Input type="number" min={0} value={form.tempoTotal} onChange={e => setForm(f => ({ ...f, tempoTotal: e.target.value }))} placeholder="Ex: 1800" />
             </div>
+          </div>
+          <div className="col-span-2 mt-1">
+            <label className="text-xs font-medium text-gray-600 mb-1 block">Tags</label>
+            <TagInput tags={formTags} onChange={setFormTags} />
+            <p className="text-xs text-gray-400 mt-1">Pressione Enter ou vírgula para adicionar.</p>
           </div>
           <div className="flex gap-2 justify-end mt-4">
             <Button variant="ghost" size="sm" onClick={() => setShowForm(false)}>Cancelar</Button>

@@ -6,6 +6,7 @@ import { useSession } from 'next-auth/react'
 import { ArrowLeft, Save, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { TagInput } from '@/components/ui/TagInput'
 import RichEditor from '@/components/editor/RichEditor'
 import Link from 'next/link'
 
@@ -18,6 +19,7 @@ export default function WikiNovoPage() {
   const [content, setContent] = useState('')
   const [categoryId, setCategoryId] = useState('')
   const [categories, setCategories] = useState<Category[]>([])
+  const [tags, setTags] = useState<string[]>([])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
@@ -47,7 +49,7 @@ export default function WikiNovoPage() {
       const res = await fetch('/api/wiki', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'page', title, content, categoryId }),
+        body: JSON.stringify({ type: 'page', title, content, categoryId, tags }),
       })
       if (!res.ok) { const d = await res.json(); setError(d.error ?? 'Erro ao salvar'); return }
       const page = await res.json()
@@ -90,6 +92,12 @@ export default function WikiNovoPage() {
             <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
           ))}
         </select>
+
+        <div>
+          <label className="text-xs font-medium text-gray-600 mb-1 block">Tags</label>
+          <TagInput tags={tags} onChange={setTags} />
+          <p className="text-xs text-gray-400 mt-1">Pressione Enter ou vírgula para adicionar. Usado na busca.</p>
+        </div>
 
         <RichEditor
           content={content}

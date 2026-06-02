@@ -49,6 +49,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ slug
       excerpt: body.excerpt || body.content?.replace(/<[^>]+>/g, '').slice(0, 150),
       categoryId: body.categoryId,
       published: body.published ?? page.published,
+      tags: body.tags ?? page.tags,
     },
   })
 

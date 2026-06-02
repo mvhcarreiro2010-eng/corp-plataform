@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
   if (!['ADMIN', 'HR'].includes(session.user.role)) return NextResponse.json({ error: 'Sem permissão' }, { status: 403 })
 
   const body = await req.json()
-  const { title, description, questoesExibir, tempoPorQuestao, tempoTotal, maxTentativas, buIds, roleFilter } = body
+  const { title, description, questoesExibir, tempoPorQuestao, tempoTotal, maxTentativas, buIds, roleFilter, tags } = body
 
   if (!title?.trim()) return NextResponse.json({ error: 'Título obrigatório' }, { status: 400 })
 
@@ -50,6 +50,7 @@ export async function POST(req: NextRequest) {
       maxTentativas: maxTentativas ?? 1,
       buIds: buIds ?? [],
       roleFilter: roleFilter ?? [],
+      tags: tags ?? [],
     },
   })
 

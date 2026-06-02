@@ -1,11 +1,10 @@
 'use client'
 
-import { Bell, Search, LogOut, User, ChevronDown, X, Pin, Loader2 } from 'lucide-react'
+import { Bell, LogOut, User, ChevronDown, X, Pin, Loader2 } from 'lucide-react'
+import { SearchBar } from './SearchBar'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { useSession, signOut } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
 import { useState, useRef, useEffect, useCallback } from 'react'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { getRoleLabel, getRoleBadgeColor, xpForNextLevel, xpProgress } from '@/lib/utils'
@@ -35,18 +34,11 @@ function timeAgo(dateStr: string): string {
 
 export function Header() {
   const { data: session } = useSession()
-  const router = useRouter()
-  const [search, setSearch] = useState('')
 
   const [showNotif, setShowNotif] = useState(false)
   const [notifs, setNotifs] = useState<Notif[]>([])
   const [loadingNotifs, setLoadingNotifs] = useState(false)
   const notifRef = useRef<HTMLDivElement>(null)
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (search.trim()) router.push(`/wiki?q=${encodeURIComponent(search)}`)
-  }
 
   const initials = session?.user?.name
     ?.split(' ')
@@ -81,18 +73,7 @@ export function Header() {
 
   return (
     <header className="h-16 bg-white border-b border-gray-200 flex items-center px-6 gap-4 sticky top-0 z-20">
-      {/* Busca */}
-      <form onSubmit={handleSearch} className="flex-1 max-w-md">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar na wiki, cursos, usuários..."
-            className="pl-9 bg-gray-50 border-gray-200 h-9"
-          />
-        </div>
-      </form>
+      <SearchBar />
 
       <div className="flex items-center gap-3 ml-auto">
         {/* XP Badge */}

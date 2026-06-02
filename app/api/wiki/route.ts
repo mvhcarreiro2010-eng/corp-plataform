@@ -99,6 +99,7 @@ export async function POST(req: NextRequest) {
       excerpt: body.excerpt || body.content.slice(0, 150),
       categoryId: body.categoryId,
       authorId: session.user.id,
+      tags: body.tags ?? [],
     },
   })
 

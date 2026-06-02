@@ -201,6 +201,7 @@ model WikiPage {
   authorId   String
   published  Boolean        @default(true)
   views      Int            @default(0)
+  tags       String[]       @default([])
   buIds      String[]       @default([])
   roleFilter String[]       @default([])
   updatedAt  DateTime       @updatedAt
@@ -269,6 +270,7 @@ model Course {
   thumbnail   String?
   xpReward    Int        @default(100)
   published   Boolean    @default(false)
+  tags        String[]   @default([])
   buIds       String[]   @default([])
   roleFilter  String[]   @default([])
   modules     Module[]
@@ -497,6 +499,7 @@ model Avaliacao {
   maxTentativas   Int         @default(1)
   testeRapido     Boolean     @default(false)
   published       Boolean     @default(false)
+  tags            String[]    @default([])
   buIds           String[]    @default([])
   roleFilter      String[]    @default([])
   questoes        Questao[]

@@ -6,6 +6,7 @@ import { useSession } from 'next-auth/react'
 import { ArrowLeft, Save, Trash2, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { TagInput } from '@/components/ui/TagInput'
 import RichEditor from '@/components/editor/RichEditor'
 import Link from 'next/link'
 
@@ -19,6 +20,7 @@ export default function WikiEditarPage() {
   const [content, setContent] = useState('')
   const [categoryId, setCategoryId] = useState('')
   const [categories, setCategories] = useState<Category[]>([])
+  const [tags, setTags] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -35,6 +37,7 @@ export default function WikiEditarPage() {
       setTitle(page.title ?? '')
       setContent(page.content ?? '')
       setCategoryId(page.categoryId ?? '')
+      setTags(page.tags ?? [])
       setCategories(cats)
       setLoading(false)
     })
@@ -56,7 +59,7 @@ export default function WikiEditarPage() {
       const res = await fetch(`/api/wiki/${slug}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, content, categoryId }),
+        body: JSON.stringify({ title, content, categoryId, tags }),
       })
       if (!res.ok) { const d = await res.json(); setError(d.error ?? 'Erro ao salvar'); return }
       const updated = await res.json()
@@ -115,6 +118,12 @@ export default function WikiEditarPage() {
             <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
           ))}
         </select>
+
+        <div>
+          <label className="text-xs font-medium text-gray-600 mb-1 block">Tags</label>
+          <TagInput tags={tags} onChange={setTags} />
+          <p className="text-xs text-gray-400 mt-1">Pressione Enter ou vírgula para adicionar. Usado na busca.</p>
+        </div>
 
         <RichEditor key={content.length > 0 ? 'loaded' : 'empty'} content={content} onChange={setContent} placeholder="Escreva o conteúdo do artigo..." minHeight={400} />
       </div>
