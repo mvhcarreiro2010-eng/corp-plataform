@@ -21,6 +21,24 @@ const ROLES = [
   { value: 'ADMIN', label: 'Administrador' },
 ]
 
+function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
+  return (
+    <div>
+      <label className="text-xs font-medium text-gray-600 mb-1 block">{label}{required && ' *'}</label>
+      {children}
+    </div>
+  )
+}
+
+function SelectField({ value, onChange, children }: { value: string; onChange: (v: string) => void; children: React.ReactNode }) {
+  return (
+    <select value={value} onChange={e => onChange(e.target.value)}
+      className="w-full h-10 px-3 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+      {children}
+    </select>
+  )
+}
+
 export default function NovoUsuarioPage() {
   const router = useRouter()
   const [bus, setBus] = useState<BU[]>([])
@@ -63,20 +81,6 @@ export default function NovoUsuarioPage() {
   const leaders = allUsers.filter(u => u.role === 'LEADER')
   const instructors = allUsers.filter(u => u.role === 'INSTRUCTOR')
 
-  const Field = ({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) => (
-    <div>
-      <label className="text-xs font-medium text-gray-600 mb-1 block">{label}{required && ' *'}</label>
-      {children}
-    </div>
-  )
-
-  const Select = ({ value, onChange, children }: { value: string; onChange: (v: string) => void; children: React.ReactNode }) => (
-    <select value={value} onChange={e => onChange(e.target.value)}
-      className="w-full h-10 px-3 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-      {children}
-    </select>
-  )
-
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
       <div className="flex items-center gap-3 mb-6">
@@ -106,9 +110,9 @@ export default function NovoUsuarioPage() {
           <h2 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">Cargo e Perfil</h2>
           <div className="grid grid-cols-2 gap-3">
             <Field label="Perfil / Role">
-              <Select value={form.role} onChange={v => set('role', v)}>
+              <SelectField value={form.role} onChange={v => set('role', v)}>
                 {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
-              </Select>
+              </SelectField>
             </Field>
             <Field label="Cargo / Função"><Input value={form.jobTitle} onChange={e => set('jobTitle', e.target.value)} placeholder="Ex: Analista de Treinamento" /></Field>
             <Field label="Departamento"><Input value={form.department} onChange={e => set('department', e.target.value)} /></Field>
@@ -120,29 +124,29 @@ export default function NovoUsuarioPage() {
           <h2 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">Business Unit e Hierarquia</h2>
           <div className="grid grid-cols-2 gap-3">
             <Field label="Business Unit">
-              <Select value={form.buId} onChange={v => set('buId', v)}>
+              <SelectField value={form.buId} onChange={v => set('buId', v)}>
                 <option value="">Selecionar BU...</option>
                 {bus.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-              </Select>
+              </SelectField>
             </Field>
             <Field label="Região"><Input value={form.regiao} onChange={e => set('regiao', e.target.value)} placeholder="Já preenchida acima" /></Field>
             <Field label="Coordenador">
-              <Select value={form.coordenadorId} onChange={v => set('coordenadorId', v)}>
+              <SelectField value={form.coordenadorId} onChange={v => set('coordenadorId', v)}>
                 <option value="">Sem coordenador</option>
                 {coordinators.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
-              </Select>
+              </SelectField>
             </Field>
             <Field label="Líder">
-              <Select value={form.liderId} onChange={v => set('liderId', v)}>
+              <SelectField value={form.liderId} onChange={v => set('liderId', v)}>
                 <option value="">Sem líder</option>
                 {leaders.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
-              </Select>
+              </SelectField>
             </Field>
             <Field label="Instrutor">
-              <Select value={form.instrutorId} onChange={v => set('instrutorId', v)}>
+              <SelectField value={form.instrutorId} onChange={v => set('instrutorId', v)}>
                 <option value="">Sem instrutor</option>
                 {instructors.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
-              </Select>
+              </SelectField>
             </Field>
           </div>
         </section>
