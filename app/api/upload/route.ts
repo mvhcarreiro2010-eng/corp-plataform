@@ -1,13 +1,12 @@
 import { auth } from '@/lib/auth'
 import { NextRequest, NextResponse } from 'next/server'
-import { writeFile, mkdir } from 'fs/promises'
-import path from 'path'
+import { supabaseAdmin } from '@/lib/supabase'
 import { randomUUID } from 'crypto'
 
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
-const ALLOWED_VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/ogg']
-const MAX_IMAGE_SIZE = 10 * 1024 * 1024  // 10MB
-const MAX_VIDEO_SIZE = 200 * 1024 * 1024 // 200MB
+const ALLOWED_VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime']
+const MAX_IMAGE_SIZE = 10 * 1024 * 1024   // 10MB
+const MAX_VIDEO_SIZE = 500 * 1024 * 1024  // 500MB
 
 export async function POST(req: NextRequest) {
   const session = await auth()
@@ -26,18 +25,29 @@ export async function POST(req: NextRequest) {
 
   const maxSize = isImage ? MAX_IMAGE_SIZE : MAX_VIDEO_SIZE
   if (file.size > maxSize) {
-    return NextResponse.json({ error: `Arquivo muito grande (máx ${isImage ? '10MB' : '200MB'})` }, { status: 400 })
+    const limit = isImage ? '10MB' : '500MB'
+    return NextResponse.json({ error: `Arquivo muito grande (máx ${limit})` }, { status: 400 })
   }
 
   const ext = file.name.split('.').pop()?.toLowerCase() ?? 'bin'
-  const filename = `${randomUUID()}.${ext}`
-  const subdir = isImage ? 'images' : 'videos'
-  const uploadDir = path.join(process.cwd(), 'public', 'uploads', subdir)
+  const bucket = isImage ? 'images' : 'videos'
+  const path = `${randomUUID()}.${ext}`
 
-  await mkdir(uploadDir, { recursive: true })
   const buffer = Buffer.from(await file.arrayBuffer())
-  await writeFile(path.join(uploadDir, filename), buffer)
 
-  const url = `/uploads/${subdir}/${filename}`
-  return NextResponse.json({ url, type: isImage ? 'image' : 'video' })
+  const { error } = await supabaseAdmin.storage
+    .from(bucket)
+    .upload(path, buffer, {
+      contentType: file.type,
+      upsert: false,
+    })
+
+  if (error) {
+    console.error('Supabase upload error:', error)
+    return NextResponse.json({ error: 'Erro ao fazer upload' }, { status: 500 })
+  }
+
+  const { data } = supabaseAdmin.storage.from(bucket).getPublicUrl(path)
+
+  return NextResponse.json({ url: data.publicUrl, type: isImage ? 'image' : 'video' })
 }

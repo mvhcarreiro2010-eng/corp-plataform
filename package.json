@@ -31,6 +31,7 @@
     "@radix-ui/react-switch": "^1.2.6",
     "@radix-ui/react-tabs": "^1.1.13",
     "@radix-ui/react-tooltip": "^1.2.8",
+    "@supabase/supabase-js": "^2.106.2",
     "@tiptap/extension-color": "^3.24.0",
     "@tiptap/extension-image": "^3.24.0",
     "@tiptap/extension-link": "^3.24.0",
