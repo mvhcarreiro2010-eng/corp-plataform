@@ -51,8 +51,8 @@ const adminItems = [
   { href: '/admin/turmas', label: 'Turmas', icon: UsersRound },
   { href: '/admin/loja', label: 'Loja', icon: ShoppingBag },
   { href: '/admin/comunidade', label: 'Comunidades', icon: MessagesSquare },
-  { href: '/admin/bus', label: 'Business Units', icon: Building2 },
-  { href: '/admin/usuarios', label: 'Usuários', icon: Users },
+  { href: '/admin/bus', label: 'Business Units', icon: Building2, adminOnly: true },
+  { href: '/admin/usuarios', label: 'Usuários', icon: Users, adminOnly: true },
 ]
 
 const DASHBOARD_ROLES = ['ADMIN', 'HR', 'MANAGER', 'COORDINATOR', 'LEADER', 'INSTRUCTOR']
@@ -133,20 +133,22 @@ export function Sidebar() {
             {!collapsed && (
               <p className="text-xs font-bold text-gray-400 uppercase tracking-wider px-3 mb-1">Admin</p>
             )}
-            {adminItems.map((item) => {
-              const isActive = pathname.startsWith(item.href)
-              const Icon = item.icon
-              return (
-                <Link key={item.href} href={item.href} title={collapsed ? item.label : undefined}
-                  className={cn(
-                    'flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium transition-colors',
-                    isActive ? 'bg-purple-50 text-purple-700' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-800'
-                  )}>
-                  <Icon className={cn('w-4 h-4 shrink-0', isActive ? 'text-purple-600' : 'text-gray-400')} />
-                  {!collapsed && <span className="truncate">{item.label}</span>}
-                </Link>
-              )
-            })}
+            {adminItems
+              .filter(item => session?.user?.role === 'ADMIN' || !item.adminOnly)
+              .map((item) => {
+                const isActive = pathname.startsWith(item.href)
+                const Icon = item.icon
+                return (
+                  <Link key={item.href} href={item.href} title={collapsed ? item.label : undefined}
+                    className={cn(
+                      'flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium transition-colors',
+                      isActive ? 'bg-purple-50 text-purple-700' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-800'
+                    )}>
+                    <Icon className={cn('w-4 h-4 shrink-0', isActive ? 'text-purple-600' : 'text-gray-400')} />
+                    {!collapsed && <span className="truncate">{item.label}</span>}
+                  </Link>
+                )
+              })}
           </div>
         )}
 
