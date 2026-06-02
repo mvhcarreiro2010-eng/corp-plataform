@@ -11,20 +11,48 @@ datasource db {
 // USUÁRIOS E AUTENTICAÇÃO
 // ============================================================
 
+model BusinessUnit {
+  id        String   @id @default(cuid())
+  name      String
+  region    String?
+  users     User[]
+  createdAt DateTime @default(now())
+
+  @@map("business_units")
+}
+
 model User {
-  id         String   @id @default(cuid())
-  name       String
-  email      String   @unique
-  password   String
-  avatar     String?
-  role       Role     @default(EMPLOYEE)
-  department String?
-  jobTitle   String?
-  bio        String?
-  xp         Int      @default(0)
-  level      Int      @default(1)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id            String   @id @default(cuid())
+  name          String
+  email         String   @unique
+  password      String
+  avatar        String?
+  role          Role     @default(EMPLOYEE)
+  department    String?
+  jobTitle      String?
+  bio           String?
+  matricula     String?  @unique
+  cpf           String?  @unique
+  regiao        String?
+  xp            Int      @default(0)
+  level         Int      @default(1)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  buId          String?
+  bu            BusinessUnit? @relation(fields: [buId], references: [id])
+
+  coordenadorId String?
+  coordenador   User?   @relation("UserCoordenador", fields: [coordenadorId], references: [id])
+  coordenados   User[]  @relation("UserCoordenador")
+
+  liderId       String?
+  lider         User?   @relation("UserLider", fields: [liderId], references: [id])
+  liderados     User[]  @relation("UserLider")
+
+  instrutorId   String?
+  instrutor     User?   @relation("UserInstrutor", fields: [instrutorId], references: [id])
+  alunos        User[]  @relation("UserInstrutor")
 
   posts             Post[]
   comments          Comment[]
@@ -35,6 +63,7 @@ model User {
   badges            UserBadge[]
   inductionProgress InductionProgress[]
   notifications     Notification[]
+  tentativas        Tentativa[]
 
   @@map("users")
 }
@@ -44,6 +73,10 @@ enum Role {
   HR
   MANAGER
   EMPLOYEE
+  COORDINATOR
+  LEADER
+  INSTRUCTOR
+  EDITOR
 }
 
 // ============================================================
@@ -51,17 +84,19 @@ enum Role {
 // ============================================================
 
 model Post {
-  id        String    @id @default(cuid())
-  content   String    @db.Text
-  mediaUrl  String?
-  mediaType String?
-  pinned    Boolean   @default(false)
-  authorId  String
-  author    User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  comments  Comment[]
-  likes     Like[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id         String    @id @default(cuid())
+  content    String    @db.Text
+  mediaUrl   String?
+  mediaType  String?
+  pinned     Boolean   @default(false)
+  buIds      String[]  @default([])
+  roleFilter String[]  @default([])
+  authorId   String
+  author     User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  comments   Comment[]
+  likes      Like[]
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
 
   @@map("posts")
 }
@@ -120,6 +155,8 @@ model WikiPage {
   authorId   String
   published  Boolean      @default(true)
   views      Int          @default(0)
+  buIds      String[]     @default([])
+  roleFilter String[]     @default([])
   updatedAt  DateTime     @updatedAt
   createdAt  DateTime     @default(now())
 
@@ -185,6 +222,8 @@ model Course {
   thumbnail   String?
   xpReward    Int        @default(100)
   published   Boolean    @default(false)
+  buIds       String[]   @default([])
+  roleFilter  String[]   @default([])
   modules     Module[]
   progress    Progress[]
   createdAt   DateTime   @default(now())
@@ -292,6 +331,8 @@ model InductionTrail {
   title       String
   description String?
   published   Boolean         @default(false)
+  buIds       String[]        @default([])
+  roleFilter  String[]        @default([])
   steps       InductionStep[]
   createdAt   DateTime        @default(now())
 
@@ -344,6 +385,58 @@ model InductionProgress {
 
   @@unique([userId, stepId])
   @@map("induction_progress")
+}
+
+// ============================================================
+// AVALIAÇÕES
+// ============================================================
+
+model Avaliacao {
+  id              String      @id @default(cuid())
+  title           String
+  description     String?     @db.Text
+  questoesExibir  Int         @default(10)
+  tempoPorQuestao Int?
+  tempoTotal      Int?
+  maxTentativas   Int         @default(1)
+  published       Boolean     @default(false)
+  buIds           String[]    @default([])
+  roleFilter      String[]    @default([])
+  questoes        Questao[]
+  tentativas      Tentativa[]
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@map("avaliacoes")
+}
+
+model Questao {
+  id          String    @id @default(cuid())
+  enunciado   String    @db.Text
+  options     String[]
+  answer      Int
+  ordem       Int       @default(0)
+  avaliacaoId String
+  avaliacao   Avaliacao @relation(fields: [avaliacaoId], references: [id], onDelete: Cascade)
+
+  @@map("questoes")
+}
+
+model Tentativa {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  avaliacaoId     String
+  avaliacao       Avaliacao @relation(fields: [avaliacaoId], references: [id], onDelete: Cascade)
+  respostas       Json      @default("{}")
+  questoesIds     String[]  @default([])
+  nota            Float?
+  acertos         Int?
+  fechadaPorTrapa Boolean   @default(false)
+  iniciadaEm      DateTime  @default(now())
+  finalizadaEm    DateTime?
+
+  @@map("tentativas")
 }
 
 // ============================================================

@@ -41,6 +41,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           department: user.department ?? undefined,
           xp: user.xp,
           level: user.level,
+          buId: user.buId ?? undefined,
         }
       },
     }),
@@ -55,6 +56,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.department = (user as any).department
         token.xp = (user as any).xp
         token.level = (user as any).level
+        token.buId = (user as any).buId
       }
       return token
     },
@@ -67,6 +69,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.department = token.department as string | undefined
         session.user.xp = token.xp as number
         session.user.level = token.level as number
+        session.user.buId = token.buId as string | undefined
       }
       return session
     },

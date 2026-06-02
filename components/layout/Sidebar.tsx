@@ -9,13 +9,15 @@ import {
   GraduationCap,
   Rocket,
   User,
-  Settings,
   ChevronLeft,
   ChevronRight,
   Building2,
   Newspaper,
   FolderOpen,
   BookMarked,
+  ClipboardList,
+  BarChart2,
+  Users,
 } from 'lucide-react'
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
@@ -27,6 +29,7 @@ const navItems = [
   { href: '/comunidade', label: 'Comunidade', icon: MessageSquare },
   { href: '/aprendizado', label: 'Aprendizado', icon: GraduationCap },
   { href: '/inducao', label: 'Indução', icon: Rocket },
+  { href: '/avaliacoes', label: 'Avaliações', icon: ClipboardList },
 ]
 
 const adminItems = [
@@ -34,7 +37,12 @@ const adminItems = [
   { href: '/admin/wiki', label: 'Categorias Wiki', icon: FolderOpen },
   { href: '/admin/cursos', label: 'Cursos', icon: BookMarked },
   { href: '/admin/inducao', label: 'Trilha Indução', icon: Rocket },
+  { href: '/admin/avaliacoes', label: 'Avaliações', icon: ClipboardList },
+  { href: '/admin/bus', label: 'Business Units', icon: Building2 },
+  { href: '/admin/usuarios', label: 'Usuários', icon: Users },
 ]
+
+const DASHBOARD_ROLES = ['ADMIN', 'HR', 'MANAGER', 'COORDINATOR', 'LEADER', 'INSTRUCTOR']
 
 export function Sidebar() {
   const pathname = usePathname()
@@ -87,6 +95,21 @@ export function Sidebar() {
             </Link>
           )
         })}
+        {DASHBOARD_ROLES.includes(session?.user?.role ?? '') && (
+          <Link
+            href="/dashboard"
+            title={collapsed ? 'Dashboard' : undefined}
+            className={cn(
+              'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors group',
+              pathname.startsWith('/dashboard')
+                ? 'bg-blue-50 text-blue-700'
+                : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+            )}
+          >
+            <BarChart2 className={cn('w-5 h-5 shrink-0', pathname.startsWith('/dashboard') ? 'text-blue-600' : 'text-gray-500')} />
+            {!collapsed && <span className="truncate">Dashboard</span>}
+          </Link>
+        )}
       </nav>
 
       {/* Bottom */}

@@ -11,11 +11,22 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const q = searchParams.get('q')
 
+  const isAdmin = ['ADMIN', 'HR'].includes(session.user.role)
+  const userBuId = session.user.buId
+  const userRole = session.user.role
+
+  const pageSegFilter = isAdmin ? { published: true } : {
+    published: true,
+    AND: [
+      { OR: [{ buIds: { isEmpty: true } }, ...(userBuId ? [{ buIds: { has: userBuId } }] : [])] },
+      { OR: [{ roleFilter: { isEmpty: true } }, { roleFilter: { has: userRole } }] },
+    ],
+  }
+
   if (q) {
-    // Busca full-text simples
     const pages = await prisma.wikiPage.findMany({
       where: {
-        published: true,
+        ...pageSegFilter,
         OR: [
           { title: { contains: q, mode: 'insensitive' } },
           { content: { contains: q, mode: 'insensitive' } },
@@ -35,14 +46,14 @@ export async function GET(req: NextRequest) {
     orderBy: { order: 'asc' },
     include: {
       pages: {
-        where: { published: true },
+        where: pageSegFilter,
         select: { id: true, title: true, slug: true, updatedAt: true },
         orderBy: { title: 'asc' },
       },
       children: {
         include: {
           pages: {
-            where: { published: true },
+            where: pageSegFilter,
             select: { id: true, title: true, slug: true, updatedAt: true },
             orderBy: { title: 'asc' },
           },

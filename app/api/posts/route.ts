@@ -11,9 +11,21 @@ export async function GET(req: NextRequest) {
   const cursor = searchParams.get('cursor')
   const limit = 10
 
+  const isAdmin = ['ADMIN', 'HR'].includes(session.user.role)
+  const userBuId = session.user.buId
+  const userRole = session.user.role
+
+  const segFilter = isAdmin ? {} : {
+    AND: [
+      { OR: [{ buIds: { isEmpty: true } }, ...(userBuId ? [{ buIds: { has: userBuId } }] : [])] },
+      { OR: [{ roleFilter: { isEmpty: true } }, { roleFilter: { has: userRole } }] },
+    ],
+  }
+
   const posts = await prisma.post.findMany({
     take: limit + 1,
     ...(cursor && { cursor: { id: cursor }, skip: 1 }),
+    where: segFilter,
     orderBy: [{ pinned: 'desc' }, { createdAt: 'desc' }],
     include: {
       author: { select: { id: true, name: true, avatar: true, jobTitle: true, role: true } },
@@ -34,12 +46,12 @@ export async function POST(req: NextRequest) {
   const session = await auth()
   if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
 
-  const allowed = ['ADMIN', 'HR']
+  const allowed = ['ADMIN', 'HR', 'EDITOR']
   if (!allowed.includes(session.user.role)) {
     return NextResponse.json({ error: 'Sem permissão' }, { status: 403 })
   }
 
-  const { content, mediaUrl, mediaType, pinned } = await req.json()
+  const { content, mediaUrl, mediaType, pinned, buIds, roleFilter } = await req.json()
   if (!content?.trim()) return NextResponse.json({ error: 'Conteúdo obrigatório' }, { status: 400 })
 
   const post = await prisma.post.create({
@@ -48,6 +60,8 @@ export async function POST(req: NextRequest) {
       mediaUrl: mediaUrl || null,
       mediaType: mediaType || null,
       pinned: pinned ?? false,
+      buIds: buIds ?? [],
+      roleFilter: roleFilter ?? [],
       authorId: session.user.id,
     },
     include: {

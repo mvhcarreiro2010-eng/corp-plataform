@@ -7,8 +7,20 @@ export async function GET() {
   const session = await auth()
   if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
 
+  const isAdmin = ['ADMIN', 'HR'].includes(session.user.role)
+  const userBuId = session.user.buId
+  const userRole = session.user.role
+
+  const trailFilter = isAdmin ? { published: true } : {
+    published: true,
+    AND: [
+      { OR: [{ buIds: { isEmpty: true } }, ...(userBuId ? [{ buIds: { has: userBuId } }] : [])] },
+      { OR: [{ roleFilter: { isEmpty: true } }, { roleFilter: { has: userRole } }] },
+    ],
+  }
+
   const trail = await prisma.inductionTrail.findFirst({
-    where: { published: true },
+    where: trailFilter,
     include: {
       steps: {
         orderBy: { order: 'asc' },

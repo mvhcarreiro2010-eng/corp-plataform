@@ -10,6 +10,7 @@ declare module 'next-auth' {
     department?: string
     xp: number
     level: number
+    buId?: string
   }
   interface Session {
     user: {
@@ -22,6 +23,7 @@ declare module 'next-auth' {
       department?: string
       xp: number
       level: number
+      buId?: string
     }
   }
 }
