@@ -143,7 +143,9 @@ export function Header() {
                             <p className="text-xs font-medium text-gray-500 truncate">{n.author.name}</p>
                             <p className="text-xs text-gray-400 shrink-0">{timeAgo(n.createdAt)}</p>
                           </div>
-                          <p className="text-sm text-gray-800 line-clamp-2 leading-snug">{n.content}</p>
+                          <p className="text-sm text-gray-800 line-clamp-2 leading-snug"
+                            dangerouslySetInnerHTML={{ __html: n.content.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim() }}
+                          />
                           {n._count.comments > 0 && (
                             <p className="text-xs text-gray-400 mt-1">
                               💬 {n._count.comments} comentário{n._count.comments !== 1 ? 's' : ''}
