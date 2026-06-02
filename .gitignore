@@ -47,3 +47,7 @@ next-env.d.ts
 /public/uploads/videos/*
 !/public/uploads/images/.gitkeep
 !/public/uploads/videos/.gitkeep
+
+# employee import data
+prisma/funcionarios.csv
+prisma/seed-funcionarios.ts

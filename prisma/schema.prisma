@@ -13,7 +13,7 @@ datasource db {
 
 model BusinessUnit {
   id        String   @id @default(cuid())
-  name      String
+  name      String   @unique
   region    String?
   users     User[]
   createdAt DateTime @default(now())
@@ -59,6 +59,7 @@ model User {
   ativo         Boolean  @default(true)
   xp            Int      @default(0)
   level         Int      @default(1)
+  mustChangePassword Boolean  @default(false)
   lastLoginAt   DateTime?
   lastSeenAt    DateTime?
   createdAt     DateTime @default(now())

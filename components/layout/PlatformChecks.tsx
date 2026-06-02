@@ -1,8 +1,10 @@
 'use client'
 
 import { useEffect, useState, useRef } from 'react'
-import { AlertTriangle, CheckCircle2, Smile } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, Smile, KeyRound, Eye, EyeOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { useSession } from 'next-auth/react'
 
 interface Comunicado { id: string; title: string; content: string; urgente: boolean }
 
@@ -15,6 +17,7 @@ const HUMOR_LABELS: Record<number, { emoji: string; label: string; color: string
 }
 
 export function PlatformChecks() {
+  const { data: session, update: updateSession } = useSession()
   const [pendingComunicados, setPendingComunicados] = useState<Comunicado[]>([])
   const [currentCom, setCurrentCom] = useState<Comunicado | null>(null)
   const [accepting, setAccepting] = useState(false)
@@ -23,6 +26,13 @@ export function PlatformChecks() {
   const [selectedHumor, setSelectedHumor] = useState<number | null>(null)
   const [savingHumor, setSavingHumor] = useState(false)
   const [humorDone, setHumorDone] = useState(false)
+
+  // Password change state
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [showPwd, setShowPwd] = useState(false)
+  const [changingPwd, setChangingPwd] = useState(false)
+  const [pwdError, setPwdError] = useState('')
 
   const initialized = useRef(false)
 
@@ -74,6 +84,24 @@ export function PlatformChecks() {
     }
   }
 
+  const handleChangePassword = async () => {
+    setPwdError('')
+    if (newPassword.length < 6) { setPwdError('A senha deve ter pelo menos 6 caracteres.'); return }
+    if (newPassword !== confirmPassword) { setPwdError('As senhas não coincidem.'); return }
+    setChangingPwd(true)
+    try {
+      const res = await fetch('/api/profile/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: newPassword }),
+      })
+      if (!res.ok) { setPwdError('Erro ao salvar senha. Tente novamente.'); return }
+      await updateSession({ mustChangePassword: false })
+    } finally {
+      setChangingPwd(false)
+    }
+  }
+
   const submitHumor = async () => {
     if (!selectedHumor) return
     setSavingHumor(true)
@@ -90,8 +118,63 @@ export function PlatformChecks() {
     }
   }
 
-  // Priority: comunicados blocking modal > humor modal
-  // Comunicado is always shown if pending, regardless of humor
+  // Priority: mustChangePassword > comunicados > humor
+
+  if (session?.user?.mustChangePassword) {
+    return (
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm">
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+          <div className="bg-blue-600 px-6 py-4 flex items-center gap-3">
+            <KeyRound className="w-6 h-6 text-white shrink-0" />
+            <div>
+              <p className="text-xs text-blue-200 font-medium uppercase tracking-wide">Primeiro Acesso</p>
+              <h2 className="text-lg font-bold text-white">Crie sua senha</h2>
+            </div>
+          </div>
+          <div className="px-6 py-5">
+            <p className="text-sm text-gray-500 mb-5">
+              Por segurança, você precisa definir uma senha pessoal antes de continuar.
+            </p>
+            <div className="space-y-3">
+              <div className="relative">
+                <Input
+                  type={showPwd ? 'text' : 'password'}
+                  placeholder="Nova senha (mín. 6 caracteres)"
+                  value={newPassword}
+                  onChange={e => setNewPassword(e.target.value)}
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPwd(v => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  {showPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              <Input
+                type={showPwd ? 'text' : 'password'}
+                placeholder="Confirmar senha"
+                value={confirmPassword}
+                onChange={e => setConfirmPassword(e.target.value)}
+              />
+              {pwdError && <p className="text-xs text-red-600">{pwdError}</p>}
+            </div>
+          </div>
+          <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
+            <Button
+              onClick={handleChangePassword}
+              disabled={changingPwd || !newPassword || !confirmPassword}
+              className="w-full gap-2"
+            >
+              <CheckCircle2 className="w-4 h-4" />
+              {changingPwd ? 'Salvando...' : 'Definir minha senha'}
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   if (currentCom) {
     return (

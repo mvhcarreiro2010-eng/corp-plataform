@@ -11,6 +11,7 @@ declare module 'next-auth' {
     xp: number
     level: number
     buId?: string
+    mustChangePassword?: boolean
   }
   interface Session {
     user: {
@@ -24,6 +25,7 @@ declare module 'next-auth' {
       xp: number
       level: number
       buId?: string
+      mustChangePassword?: boolean
     }
   }
 }

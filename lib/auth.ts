@@ -47,6 +47,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           xp: user.xp,
           level: user.level,
           buId: user.buId ?? undefined,
+          mustChangePassword: user.mustChangePassword,
         }
       },
     }),
@@ -62,6 +63,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.xp = (user as any).xp
         token.level = (user as any).level
         token.buId = (user as any).buId
+        token.mustChangePassword = (user as any).mustChangePassword
       }
       return token
     },
@@ -75,6 +77,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.xp = token.xp as number
         session.user.level = token.level as number
         session.user.buId = token.buId as string | undefined
+        session.user.mustChangePassword = token.mustChangePassword as boolean | undefined
       }
       return session
     },
