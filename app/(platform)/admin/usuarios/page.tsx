@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import { Users, Plus, Upload, Search, Trash2, ChevronDown, ToggleLeft, ToggleRight } from 'lucide-react'
+import { Users, Plus, Upload, Search, Trash2, ChevronDown, ToggleLeft, ToggleRight, Pencil } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
@@ -172,9 +172,16 @@ export default function AdminUsuariosPage() {
                     </button>
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <button onClick={() => remove(u.id, u.name)} className="p-1.5 rounded hover:bg-red-50 text-red-400">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <div className="flex items-center justify-end gap-1">
+                      <Link href={`/admin/usuarios/${u.id}`}>
+                        <button className="p-1.5 rounded hover:bg-blue-50 text-gray-400 hover:text-blue-600">
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                      </Link>
+                      <button onClick={() => remove(u.id, u.name)} className="p-1.5 rounded hover:bg-red-50 text-red-400">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
