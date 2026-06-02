@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { ClipboardList, Plus, Pencil, Trash2, BookOpen, Eye, EyeOff } from 'lucide-react'
+import { ClipboardList, Plus, Trash2, BookOpen, Eye, EyeOff, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
@@ -68,7 +68,13 @@ export default function AdminAvaliacoesPage() {
           <ClipboardList className="w-6 h-6 text-purple-600" />
           <h1 className="text-2xl font-bold text-gray-900">Avaliações</h1>
         </div>
-        <Button onClick={() => setShowForm(true)} className="gap-2"><Plus className="w-4 h-4" />Nova Avaliação</Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" className="gap-2"
+            onClick={() => window.open('/api/admin/export/notas', '_blank')}>
+            <Download className="w-4 h-4" />Exportar CSV
+          </Button>
+          <Button onClick={() => setShowForm(true)} className="gap-2"><Plus className="w-4 h-4" />Nova Avaliação</Button>
+        </div>
       </div>
 
       {showForm && (

@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
   const userTurmaIds = userTurmas.map(t => t.turmaId)
 
   const where = isAdmin
-    ? { published: true }
+    ? {}
     : {
         published: true,
         OR: [

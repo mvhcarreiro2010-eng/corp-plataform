@@ -21,6 +21,7 @@ import {
   Video,
   ShoppingBag,
   UsersRound,
+  MessagesSquare,
 } from 'lucide-react'
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
@@ -46,6 +47,7 @@ const adminItems = [
   { href: '/admin/treinamentos', label: 'Treinamentos', icon: Video },
   { href: '/admin/turmas', label: 'Turmas', icon: UsersRound },
   { href: '/admin/loja', label: 'Loja', icon: ShoppingBag },
+  { href: '/admin/comunidade', label: 'Comunidades', icon: MessagesSquare },
   { href: '/admin/bus', label: 'Business Units', icon: Building2 },
   { href: '/admin/usuarios', label: 'Usuários', icon: Users },
 ]

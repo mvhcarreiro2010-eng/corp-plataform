@@ -46,6 +46,8 @@ export async function POST(req: NextRequest) {
         order: count,
         xpReward: body.xpReward ?? 50,
         mediaUrl: body.mediaUrl ?? null,
+        diasDesbloquear: body.diasDesbloquear != null ? Number(body.diasDesbloquear) : null,
+        conteudoUrl: body.conteudoUrl ?? null,
         trailId: body.trailId,
       },
       include: { quizzes: true },
@@ -93,6 +95,8 @@ export async function PUT(req: NextRequest) {
         order: body.order,
         xpReward: body.xpReward,
         mediaUrl: body.mediaUrl ?? null,
+        diasDesbloquear: body.diasDesbloquear != null ? Number(body.diasDesbloquear) : null,
+        conteudoUrl: body.conteudoUrl ?? null,
       },
       include: { quizzes: true },
     })

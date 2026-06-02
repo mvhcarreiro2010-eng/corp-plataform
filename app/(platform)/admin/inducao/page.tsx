@@ -13,7 +13,8 @@ import RichEditor from '@/components/editor/RichEditor'
 type InductionQuiz = { id: string; question: string; options: string[]; answer: number }
 type InductionStep = {
   id: string; title: string; content: string; type: string; order: number
-  xpReward: number; mediaUrl: string | null; quizzes: InductionQuiz[]
+  xpReward: number; mediaUrl: string | null; diasDesbloquear: number | null
+  conteudoUrl: string | null; quizzes: InductionQuiz[]
 }
 type InductionTrail = {
   id: string; title: string; description: string | null; published: boolean
@@ -25,6 +26,18 @@ const STEP_TYPES = [
   { value: 'VIDEO', label: '🎬 Vídeo', color: 'bg-purple-100 text-purple-700' },
   { value: 'QUIZ', label: '🧠 Quiz', color: 'bg-orange-100 text-orange-700' },
   { value: 'TASK', label: '✅ Tarefa', color: 'bg-green-100 text-green-700' },
+  { value: 'MILESTONE', label: '🏆 Marco', color: 'bg-amber-100 text-amber-700' },
+]
+
+const DIAS_OPTIONS = [
+  { value: '', label: 'Sem trava (disponível imediatamente)' },
+  { value: '5', label: '5 dias após admissão' },
+  { value: '15', label: '15 dias após admissão' },
+  { value: '30', label: '30 dias após admissão' },
+  { value: '60', label: '60 dias após admissão' },
+  { value: '90', label: '90 dias após admissão' },
+  { value: '180', label: '180 dias após admissão' },
+  { value: '365', label: '1 ano após admissão' },
 ]
 
 function QuizEditor({ quiz, onUpdate, onDelete }: {
@@ -84,6 +97,8 @@ function StepCard({ step, trailId, onUpdate, onDelete, onMoveUp, onMoveDown, isF
   const [content, setContent] = useState(step.content)
   const [mediaUrl, setMediaUrl] = useState(step.mediaUrl ?? '')
   const [xpReward, setXpReward] = useState(step.xpReward)
+  const [diasDesbloquear, setDiasDesbloquear] = useState(step.diasDesbloquear?.toString() ?? '')
+  const [conteudoUrl, setConteudoUrl] = useState(step.conteudoUrl ?? '')
   const [quizzes, setQuizzes] = useState<InductionQuiz[]>(step.quizzes)
   const [saving, setSaving] = useState(false)
 
@@ -94,7 +109,12 @@ function StepCard({ step, trailId, onUpdate, onDelete, onMoveUp, onMoveDown, isF
     const res = await fetch('/api/induction/admin', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ entity: 'step', id: step.id, title, type, content, mediaUrl: mediaUrl || null, xpReward }),
+      body: JSON.stringify({
+        entity: 'step', id: step.id, title, type, content,
+        mediaUrl: mediaUrl || null, xpReward,
+        diasDesbloquear: diasDesbloquear ? Number(diasDesbloquear) : null,
+        conteudoUrl: conteudoUrl || null,
+      }),
     })
     const updated = await res.json()
     onUpdate({ ...updated, quizzes })
@@ -140,6 +160,9 @@ function StepCard({ step, trailId, onUpdate, onDelete, onMoveUp, onMoveDown, isF
         <span className="w-6 h-6 rounded-full bg-gray-100 text-gray-600 text-xs font-bold flex items-center justify-center flex-shrink-0">{step.order + 1}</span>
         <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${typeInfo.color}`}>{typeInfo.label}</span>
         <span className="font-medium text-gray-900 flex-1 text-sm">{step.title}</span>
+        {step.diasDesbloquear && (
+          <span className="text-xs bg-amber-100 text-amber-600 px-2 py-0.5 rounded-full">🔒 {step.diasDesbloquear}d</span>
+        )}
         <span className="text-xs text-yellow-600 font-medium">+{step.xpReward} XP</span>
         <button onClick={() => setOpen(!open)} className="text-gray-400 hover:text-gray-600">
           {open ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
@@ -170,13 +193,31 @@ function StepCard({ step, trailId, onUpdate, onDelete, onMoveUp, onMoveDown, isF
                   <label className="text-xs font-medium text-gray-600 mb-1 block">XP da etapa</label>
                   <Input type="number" value={xpReward} onChange={(e) => setXpReward(Number(e.target.value))} className="h-9" min={0} />
                 </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-600 mb-1 block">🔒 Trava por tempo de casa</label>
+                  <select value={diasDesbloquear} onChange={e => setDiasDesbloquear(e.target.value)}
+                    className="w-full h-9 border border-gray-200 rounded-lg px-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    {DIAS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                </div>
                 {(type === 'VIDEO' || type === 'LESSON') && (
                   <div>
                     <label className="text-xs font-medium text-gray-600 mb-1 block">URL de mídia (vídeo)</label>
                     <Input value={mediaUrl} onChange={(e) => setMediaUrl(e.target.value)} placeholder="YouTube, Vimeo ou /uploads/..." className="h-9" />
                   </div>
                 )}
+                {(type === 'MILESTONE' || type === 'TASK') && (
+                  <div>
+                    <label className="text-xs font-medium text-gray-600 mb-1 block">URL de conteúdo (link externo)</label>
+                    <Input value={conteudoUrl} onChange={(e) => setConteudoUrl(e.target.value)} placeholder="https://teams.microsoft.com/..." className="h-9" />
+                  </div>
+                )}
               </div>
+              {diasDesbloquear && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs text-amber-700 flex items-center gap-2">
+                  🔒 Esta etapa ficará bloqueada até {diasDesbloquear} dias após a data de admissão do colaborador.
+                </div>
+              )}
               <div>
                 <label className="text-xs font-medium text-gray-600 mb-1 block">Conteúdo</label>
                 <RichEditor content={content} onChange={setContent} minHeight={200} />
@@ -224,6 +265,8 @@ export default function AdminInducaoPage() {
   const [addingStep, setAddingStep] = useState(false)
   const [newStepTitle, setNewStepTitle] = useState('')
   const [newStepType, setNewStepType] = useState('LESSON')
+  const [newStepDias, setNewStepDias] = useState('')
+  const [newStepUrl, setNewStepUrl] = useState('')
 
   const isAdmin = ['ADMIN', 'HR'].includes(session?.user?.role ?? '')
 
@@ -269,13 +312,17 @@ export default function AdminInducaoPage() {
     if (!newStepTitle.trim() || !selectedTrail) return
     const res = await fetch('/api/induction/admin', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ entity: 'step', trailId: selectedTrail.id, title: newStepTitle, type: newStepType }),
+      body: JSON.stringify({
+        entity: 'step', trailId: selectedTrail.id, title: newStepTitle, type: newStepType,
+        diasDesbloquear: newStepDias ? Number(newStepDias) : null,
+        conteudoUrl: newStepUrl || null,
+      }),
     })
     const step = await res.json()
     const updated = { ...selectedTrail, steps: [...selectedTrail.steps, step] }
     setSelectedTrail(updated)
     setTrails(prev => prev.map(t => t.id === updated.id ? updated : t))
-    setAddingStep(false); setNewStepTitle(''); setNewStepType('LESSON')
+    setAddingStep(false); setNewStepTitle(''); setNewStepType('LESSON'); setNewStepDias(''); setNewStepUrl('')
   }
 
   const updateStep = (step: InductionStep) => {
@@ -386,6 +433,21 @@ export default function AdminInducaoPage() {
                   className="border border-gray-200 rounded-lg px-3 text-sm bg-white focus:outline-none h-9">
                   {STEP_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                 </select>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-gray-500 mb-1 block">🔒 Trava por tempo de casa</label>
+                  <select value={newStepDias} onChange={e => setNewStepDias(e.target.value)}
+                    className="w-full h-9 border border-gray-200 rounded-lg px-3 text-sm bg-white focus:outline-none">
+                    {DIAS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                </div>
+                {(newStepType === 'MILESTONE' || newStepType === 'TASK') && (
+                  <div>
+                    <label className="text-xs text-gray-500 mb-1 block">URL de conteúdo</label>
+                    <Input value={newStepUrl} onChange={e => setNewStepUrl(e.target.value)} placeholder="https://..." className="h-9" />
+                  </div>
+                )}
               </div>
               <div className="flex justify-end gap-2">
                 <Button size="sm" variant="ghost" onClick={() => setAddingStep(false)}><X className="w-4 h-4" /> Cancelar</Button>

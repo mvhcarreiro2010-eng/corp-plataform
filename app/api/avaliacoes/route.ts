@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
   const userBuId = session.user.buId
   const userRole = session.user.role
 
-  const segFilter = isAdmin ? { published: true } : {
+  const segFilter = isAdmin ? {} : {
     published: true,
     AND: [
       { OR: [{ buIds: { isEmpty: true } }, ...(userBuId ? [{ buIds: { has: userBuId } }] : [])] },
