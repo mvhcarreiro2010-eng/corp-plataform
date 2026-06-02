@@ -99,10 +99,26 @@ export async function PUT(req: NextRequest) {
   if (!await requireAdmin()) return NextResponse.json({ error: 'Não autorizado' }, { status: 403 })
 
   const body = await req.json()
+
+  // Bulk update: { ids: string[], buId?: string, ativo?: boolean }
+  if (Array.isArray(body.ids)) {
+    const { ids, buId, ativo } = body
+    if (!ids.length) return NextResponse.json({ error: 'Nenhum ID fornecido' }, { status: 400 })
+
+    const data: Record<string, unknown> = {}
+    if (typeof ativo === 'boolean') data.ativo = ativo
+    if (buId !== undefined) data.buId = buId || null
+
+    if (!Object.keys(data).length) return NextResponse.json({ error: 'Nenhum campo para atualizar' }, { status: 400 })
+
+    const result = await prisma.user.updateMany({ where: { id: { in: ids } }, data })
+    return NextResponse.json({ updated: result.count })
+  }
+
+  // Single update: { id, ativo }
   const { id, ativo } = body
   if (!id) return NextResponse.json({ error: 'ID obrigatório' }, { status: 400 })
 
-  // Toggle ativo status
   if (typeof ativo === 'boolean') {
     const user = await prisma.user.update({ where: { id }, data: { ativo } })
     return NextResponse.json({ id: user.id, ativo: user.ativo })

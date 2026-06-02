@@ -2,7 +2,11 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import { Users, Plus, Upload, Search, Trash2, ChevronDown, ToggleLeft, ToggleRight, Pencil } from 'lucide-react'
+import {
+  Users, Plus, Upload, Search, Trash2, ChevronDown,
+  ToggleLeft, ToggleRight, Pencil, CheckSquare, Square,
+  Building2, UserCheck, UserX, X,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
@@ -46,8 +50,14 @@ export default function AdminUsuariosPage() {
   const [filterRole, setFilterRole] = useState('')
   const [filterAtivo, setFilterAtivo] = useState('true')
 
+  // Bulk selection state
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [bulkBuId, setBulkBuId] = useState('')
+  const [bulkLoading, setBulkLoading] = useState(false)
+
   const load = useCallback(async () => {
     setLoading(true)
+    setSelected(new Set())
     const params = new URLSearchParams()
     if (search) params.set('search', search)
     if (filterBu) params.set('buId', filterBu)
@@ -61,6 +71,7 @@ export default function AdminUsuariosPage() {
   useEffect(() => { load() }, [load])
   useEffect(() => { fetch('/api/admin/bus').then(r => r.json()).then(setBus) }, [])
 
+  // ── Single-row actions ──────────────────────────────────────
   const toggleAtivo = async (u: User) => {
     await fetch('/api/admin/usuarios', {
       method: 'PUT',
@@ -76,8 +87,48 @@ export default function AdminUsuariosPage() {
     load()
   }
 
+  // ── Checkbox helpers ────────────────────────────────────────
+  const allChecked = users.length > 0 && users.every(u => selected.has(u.id))
+  const someChecked = selected.size > 0 && !allChecked
+
+  const toggleAll = () => {
+    if (allChecked) {
+      setSelected(new Set())
+    } else {
+      setSelected(new Set(users.map(u => u.id)))
+    }
+  }
+
+  const toggleOne = (id: string) => {
+    setSelected(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
+  // ── Bulk actions ────────────────────────────────────────────
+  const bulkUpdate = async (data: Record<string, unknown>) => {
+    setBulkLoading(true)
+    await fetch('/api/admin/usuarios', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids: [...selected], ...data }),
+    })
+    setBulkLoading(false)
+    load()
+  }
+
+  const bulkChangeBU = async () => {
+    if (!bulkBuId && bulkBuId !== '') return
+    await bulkUpdate({ buId: bulkBuId || null })
+    setBulkBuId('')
+  }
+
+  const selCount = selected.size
+
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
+    <div className="max-w-7xl mx-auto px-4 py-8 pb-32">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <Users className="w-6 h-6 text-purple-600" />
@@ -130,6 +181,15 @@ export default function AdminUsuariosPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50 text-xs font-medium text-gray-500 uppercase tracking-wide">
+                <th className="px-4 py-3 w-10">
+                  <button onClick={toggleAll} className="text-gray-400 hover:text-blue-600 transition-colors">
+                    {allChecked
+                      ? <CheckSquare className="w-4 h-4 text-blue-600" />
+                      : someChecked
+                        ? <CheckSquare className="w-4 h-4 text-blue-400" />
+                        : <Square className="w-4 h-4" />}
+                  </button>
+                </th>
                 <th className="px-4 py-3 text-left">Nome</th>
                 <th className="px-4 py-3 text-left">E-mail</th>
                 <th className="px-4 py-3 text-left">Matrícula</th>
@@ -143,50 +203,118 @@ export default function AdminUsuariosPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {users.map(u => (
-                <tr key={u.id} className={`hover:bg-gray-50 transition-colors ${!u.ativo ? 'opacity-50' : ''}`}>
-                  <td className="px-4 py-3 font-medium text-gray-900">{u.name}</td>
-                  <td className="px-4 py-3 text-gray-500 text-xs">{u.email}</td>
-                  <td className="px-4 py-3 text-gray-500">{u.matricula ?? '—'}</td>
-                  <td className="px-4 py-3 text-gray-500">{u.bu?.name ?? '—'}</td>
-                  <td className="px-4 py-3 text-gray-500 text-xs">
-                    {u.turmas.length > 0
-                      ? u.turmas.map(t => t.turma.name).join(', ')
-                      : '—'}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${ROLE_COLORS[u.role] ?? 'bg-gray-100 text-gray-600'}`}>
-                      {ROLE_LABELS[u.role] ?? u.role}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-gray-500 text-xs">
-                    {u.admissaoEm ? new Date(u.admissaoEm).toLocaleDateString('pt-BR') : '—'}
-                  </td>
-                  <td className="px-4 py-3 text-gray-500 text-xs font-mono">
-                    {tempoDeCasa(u.admissaoEm)}
-                  </td>
-                  <td className="px-4 py-3">
-                    <button onClick={() => toggleAtivo(u)} title={u.ativo ? 'Desativar' : 'Ativar'}
-                      className={`p-1 rounded transition-colors ${u.ativo ? 'text-green-500 hover:text-green-700' : 'text-gray-300 hover:text-gray-500'}`}>
-                      {u.ativo ? <ToggleRight className="w-5 h-5" /> : <ToggleLeft className="w-5 h-5" />}
-                    </button>
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <Link href={`/admin/usuarios/${u.id}`}>
-                        <button className="p-1.5 rounded hover:bg-blue-50 text-gray-400 hover:text-blue-600">
-                          <Pencil className="w-4 h-4" />
-                        </button>
-                      </Link>
-                      <button onClick={() => remove(u.id, u.name)} className="p-1.5 rounded hover:bg-red-50 text-red-400">
-                        <Trash2 className="w-4 h-4" />
+              {users.map(u => {
+                const isSelected = selected.has(u.id)
+                return (
+                  <tr key={u.id} className={`hover:bg-gray-50 transition-colors ${!u.ativo ? 'opacity-50' : ''} ${isSelected ? 'bg-blue-50' : ''}`}>
+                    <td className="px-4 py-3">
+                      <button onClick={() => toggleOne(u.id)} className="text-gray-400 hover:text-blue-600 transition-colors">
+                        {isSelected
+                          ? <CheckSquare className="w-4 h-4 text-blue-600" />
+                          : <Square className="w-4 h-4" />}
                       </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                    <td className="px-4 py-3 font-medium text-gray-900">{u.name}</td>
+                    <td className="px-4 py-3 text-gray-500 text-xs">{u.email}</td>
+                    <td className="px-4 py-3 text-gray-500">{u.matricula ?? '—'}</td>
+                    <td className="px-4 py-3 text-gray-500">{u.bu?.name ?? '—'}</td>
+                    <td className="px-4 py-3 text-gray-500 text-xs">
+                      {u.turmas.length > 0 ? u.turmas.map(t => t.turma.name).join(', ') : '—'}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${ROLE_COLORS[u.role] ?? 'bg-gray-100 text-gray-600'}`}>
+                        {ROLE_LABELS[u.role] ?? u.role}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-gray-500 text-xs">
+                      {u.admissaoEm ? new Date(u.admissaoEm).toLocaleDateString('pt-BR') : '—'}
+                    </td>
+                    <td className="px-4 py-3 text-gray-500 text-xs font-mono">{tempoDeCasa(u.admissaoEm)}</td>
+                    <td className="px-4 py-3">
+                      <button onClick={() => toggleAtivo(u)} title={u.ativo ? 'Desativar' : 'Ativar'}
+                        className={`p-1 rounded transition-colors ${u.ativo ? 'text-green-500 hover:text-green-700' : 'text-gray-300 hover:text-gray-500'}`}>
+                        {u.ativo ? <ToggleRight className="w-5 h-5" /> : <ToggleLeft className="w-5 h-5" />}
+                      </button>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <Link href={`/admin/usuarios/${u.id}`}>
+                          <button className="p-1.5 rounded hover:bg-blue-50 text-gray-400 hover:text-blue-600">
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                        </Link>
+                        <button onClick={() => remove(u.id, u.name)} className="p-1.5 rounded hover:bg-red-50 text-red-400">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* ── Bulk action bar ───────────────────────────────────── */}
+      {selCount > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-gray-900 text-white px-5 py-3 rounded-2xl shadow-2xl">
+          <span className="text-sm font-medium whitespace-nowrap">
+            {selCount} selecionado{selCount > 1 ? 's' : ''}
+          </span>
+
+          <div className="w-px h-5 bg-gray-600" />
+
+          {/* Change BU */}
+          <div className="flex items-center gap-2">
+            <Building2 className="w-4 h-4 text-gray-400 shrink-0" />
+            <div className="relative">
+              <select
+                value={bulkBuId}
+                onChange={e => setBulkBuId(e.target.value)}
+                className="h-8 pl-2 pr-7 text-xs rounded-lg bg-gray-800 border border-gray-600 text-white appearance-none focus:outline-none focus:ring-1 focus:ring-blue-500"
+              >
+                <option value="">Manter BU atual</option>
+                <option value="__clear__">Remover BU</option>
+                {bus.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+              </select>
+              <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
+            </div>
+            <Button
+              size="sm"
+              disabled={bulkLoading || !bulkBuId}
+              onClick={() => bulkUpdate({ buId: bulkBuId === '__clear__' ? null : bulkBuId })}
+              className="h-8 text-xs bg-blue-600 hover:bg-blue-700"
+            >
+              Aplicar BU
+            </Button>
+          </div>
+
+          <div className="w-px h-5 bg-gray-600" />
+
+          {/* Toggle active */}
+          <button
+            disabled={bulkLoading}
+            onClick={() => bulkUpdate({ ativo: true })}
+            className="flex items-center gap-1.5 text-xs text-green-400 hover:text-green-300 disabled:opacity-50 transition-colors"
+          >
+            <UserCheck className="w-4 h-4" />
+            Ativar
+          </button>
+          <button
+            disabled={bulkLoading}
+            onClick={() => bulkUpdate({ ativo: false })}
+            className="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-300 disabled:opacity-50 transition-colors"
+          >
+            <UserX className="w-4 h-4" />
+            Desativar
+          </button>
+
+          <div className="w-px h-5 bg-gray-600" />
+
+          <button onClick={() => setSelected(new Set())} className="text-gray-400 hover:text-white transition-colors">
+            <X className="w-4 h-4" />
+          </button>
         </div>
       )}
     </div>
