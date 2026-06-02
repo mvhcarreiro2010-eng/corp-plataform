@@ -21,6 +21,27 @@ model BusinessUnit {
   @@map("business_units")
 }
 
+model Turma {
+  id        String      @id @default(cuid())
+  name      String
+  descricao String?
+  users     TurmaUser[]
+  createdAt DateTime    @default(now())
+
+  @@map("turmas")
+}
+
+model TurmaUser {
+  turmaId   String
+  turma     Turma    @relation(fields: [turmaId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  addedAt   DateTime @default(now())
+
+  @@id([turmaId, userId])
+  @@map("turma_users")
+}
+
 model User {
   id            String   @id @default(cuid())
   name          String
@@ -34,6 +55,8 @@ model User {
   matricula     String?  @unique
   cpf           String?  @unique
   regiao        String?
+  admissaoEm    DateTime?
+  ativo         Boolean  @default(true)
   xp            Int      @default(0)
   level         Int      @default(1)
   createdAt     DateTime @default(now())
@@ -64,6 +87,9 @@ model User {
   inductionProgress InductionProgress[]
   notifications     Notification[]
   tentativas        Tentativa[]
+  turmas            TurmaUser[]
+  presencas         TreinamentoPresenca[]
+  resgates          Resgate[]
 
   @@map("users")
 }
@@ -340,17 +366,21 @@ model InductionTrail {
 }
 
 model InductionStep {
-  id       String              @id @default(cuid())
-  title    String
-  content  String              @db.Text
-  type     StepType            @default(LESSON)
-  order    Int                 @default(0)
-  xpReward Int                 @default(50)
-  mediaUrl String?
-  trailId  String
-  trail    InductionTrail      @relation(fields: [trailId], references: [id], onDelete: Cascade)
-  progress InductionProgress[]
-  quizzes  InductionQuiz[]
+  id               String              @id @default(cuid())
+  title            String
+  content          String              @db.Text
+  type             StepType            @default(LESSON)
+  order            Int                 @default(0)
+  xpReward         Int                 @default(50)
+  mediaUrl         String?
+  // Se definido, o step só fica disponível N dias após admissaoEm do usuário
+  diasDesbloquear  Int?
+  // URL de redirecionamento para marcos (treinamento/avaliação externa)
+  conteudoUrl      String?
+  trailId          String
+  trail            InductionTrail      @relation(fields: [trailId], references: [id], onDelete: Cascade)
+  progress         InductionProgress[]
+  quizzes          InductionQuiz[]
 
   @@map("induction_steps")
 }
@@ -360,6 +390,7 @@ enum StepType {
   QUIZ
   VIDEO
   TASK
+  MILESTONE
 }
 
 model InductionQuiz {
@@ -385,6 +416,48 @@ model InductionProgress {
 
   @@unique([userId, stepId])
   @@map("induction_progress")
+}
+
+// ============================================================
+// TREINAMENTOS ONLINE
+// ============================================================
+
+model TreinamentoOnline {
+  id           String                @id @default(cuid())
+  title        String
+  description  String?               @db.Text
+  url          String
+  type         TreinamentoType       @default(YOUTUBE)
+  scheduledAt  DateTime?
+  duracao      Int?                  // minutos estimados
+  published    Boolean               @default(false)
+  turmaIds     String[]              @default([])
+  roleFilter   String[]              @default([])
+  presencas    TreinamentoPresenca[]
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+
+  @@map("treinamentos_online")
+}
+
+enum TreinamentoType {
+  YOUTUBE
+  TEAMS
+  OUTROS
+}
+
+model TreinamentoPresenca {
+  id              String            @id @default(cuid())
+  userId          String
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  treinamentoId   String
+  treinamento     TreinamentoOnline @relation(fields: [treinamentoId], references: [id], onDelete: Cascade)
+  clicou          Boolean           @default(false)
+  clicadoEm       DateTime?
+  xpCreditado     Boolean           @default(false)
+
+  @@unique([userId, treinamentoId])
+  @@map("treinamento_presencas")
 }
 
 // ============================================================
@@ -437,6 +510,44 @@ model Tentativa {
   finalizadaEm    DateTime?
 
   @@map("tentativas")
+}
+
+// ============================================================
+// LOJA DE PONTOS (XP)
+// ============================================================
+
+model LojaItem {
+  id          String    @id @default(cuid())
+  name        String
+  description String?   @db.Text
+  imageUrl    String?
+  xpCusto     Int
+  estoque     Int       @default(-1) // -1 = ilimitado
+  ativo       Boolean   @default(true)
+  resgates    Resgate[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("loja_itens")
+}
+
+model Resgate {
+  id         String        @id @default(cuid())
+  userId     String
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  itemId     String
+  item       LojaItem      @relation(fields: [itemId], references: [id])
+  xpDebitado Int
+  status     ResgateStatus @default(PENDENTE)
+  createdAt  DateTime      @default(now())
+
+  @@map("resgates")
+}
+
+enum ResgateStatus {
+  PENDENTE
+  APROVADO
+  REJEITADO
 }
 
 // ============================================================

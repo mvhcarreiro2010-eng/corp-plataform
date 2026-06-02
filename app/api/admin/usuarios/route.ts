@@ -17,25 +17,39 @@ export async function GET(req: NextRequest) {
   const buId = searchParams.get('buId')
   const role = searchParams.get('role')
   const search = searchParams.get('search')
+  const ativo = searchParams.get('ativo') // 'true' | 'false' | null = all
+  const minimal = searchParams.get('minimal') === 'true'
 
   const where: Record<string, unknown> = {}
   if (buId) where.buId = buId
   if (role) where.role = role
+  if (ativo !== null) where.ativo = ativo === 'true'
   if (search) where.OR = [
     { name: { contains: search, mode: 'insensitive' } },
     { email: { contains: search, mode: 'insensitive' } },
     { matricula: { contains: search, mode: 'insensitive' } },
   ]
 
+  if (minimal) {
+    const users = await prisma.user.findMany({
+      where: { ativo: true },
+      select: { id: true, name: true, role: true },
+      orderBy: { name: 'asc' },
+    })
+    return NextResponse.json(users)
+  }
+
   const users = await prisma.user.findMany({
     where,
     select: {
       id: true, name: true, email: true, role: true, matricula: true, cpf: true,
-      regiao: true, department: true, jobTitle: true, createdAt: true,
+      regiao: true, department: true, jobTitle: true, admissaoEm: true,
+      ativo: true, createdAt: true,
       bu: { select: { id: true, name: true } },
       coordenador: { select: { id: true, name: true } },
       lider: { select: { id: true, name: true } },
       instrutor: { select: { id: true, name: true } },
+      turmas: { include: { turma: { select: { id: true, name: true } } } },
     },
     orderBy: { name: 'asc' },
   })
@@ -47,7 +61,8 @@ export async function POST(req: NextRequest) {
   if (!await requireAdmin()) return NextResponse.json({ error: 'Não autorizado' }, { status: 403 })
 
   const body = await req.json()
-  const { name, email, password, role, matricula, cpf, regiao, department, jobTitle, buId, coordenadorId, liderId, instrutorId } = body
+  const { name, email, password, role, matricula, cpf, regiao, department, jobTitle,
+    buId, coordenadorId, liderId, instrutorId, admissaoEm } = body
 
   if (!name?.trim() || !email?.trim() || !password?.trim()) {
     return NextResponse.json({ error: 'Nome, email e senha são obrigatórios' }, { status: 400 })
@@ -72,11 +87,28 @@ export async function POST(req: NextRequest) {
       coordenadorId: coordenadorId || null,
       liderId: liderId || null,
       instrutorId: instrutorId || null,
+      admissaoEm: admissaoEm ? new Date(admissaoEm) : null,
     },
     select: { id: true, name: true, email: true, role: true },
   })
 
   return NextResponse.json(user, { status: 201 })
+}
+
+export async function PUT(req: NextRequest) {
+  if (!await requireAdmin()) return NextResponse.json({ error: 'Não autorizado' }, { status: 403 })
+
+  const body = await req.json()
+  const { id, ativo } = body
+  if (!id) return NextResponse.json({ error: 'ID obrigatório' }, { status: 400 })
+
+  // Toggle ativo status
+  if (typeof ativo === 'boolean') {
+    const user = await prisma.user.update({ where: { id }, data: { ativo } })
+    return NextResponse.json({ id: user.id, ativo: user.ativo })
+  }
+
+  return NextResponse.json({ error: 'Operação inválida' }, { status: 400 })
 }
 
 export async function DELETE(req: NextRequest) {

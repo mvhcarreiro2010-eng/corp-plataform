@@ -18,6 +18,9 @@ import {
   ClipboardList,
   BarChart2,
   Users,
+  Video,
+  ShoppingBag,
+  UsersRound,
 } from 'lucide-react'
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
@@ -29,7 +32,9 @@ const navItems = [
   { href: '/comunidade', label: 'Comunidade', icon: MessageSquare },
   { href: '/aprendizado', label: 'Aprendizado', icon: GraduationCap },
   { href: '/inducao', label: 'Indução', icon: Rocket },
+  { href: '/treinamentos', label: 'Treinamentos', icon: Video },
   { href: '/avaliacoes', label: 'Avaliações', icon: ClipboardList },
+  { href: '/loja', label: 'Loja', icon: ShoppingBag },
 ]
 
 const adminItems = [
@@ -38,6 +43,9 @@ const adminItems = [
   { href: '/admin/cursos', label: 'Cursos', icon: BookMarked },
   { href: '/admin/inducao', label: 'Trilha Indução', icon: Rocket },
   { href: '/admin/avaliacoes', label: 'Avaliações', icon: ClipboardList },
+  { href: '/admin/treinamentos', label: 'Treinamentos', icon: Video },
+  { href: '/admin/turmas', label: 'Turmas', icon: UsersRound },
+  { href: '/admin/loja', label: 'Loja', icon: ShoppingBag },
   { href: '/admin/bus', label: 'Business Units', icon: Building2 },
   { href: '/admin/usuarios', label: 'Usuários', icon: Users },
 ]

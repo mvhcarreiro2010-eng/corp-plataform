@@ -31,6 +31,7 @@ export default function NovoUsuarioPage() {
     name: '', email: '', password: '', role: 'EMPLOYEE',
     matricula: '', cpf: '', regiao: '', department: '', jobTitle: '',
     buId: '', coordenadorId: '', liderId: '', instrutorId: '',
+    admissaoEm: '',
   })
 
   useEffect(() => {
@@ -97,6 +98,7 @@ export default function NovoUsuarioPage() {
             <Field label="Senha" required><Input type="password" value={form.password} onChange={e => set('password', e.target.value)} placeholder="Mínimo 6 caracteres" /></Field>
             <Field label="Matrícula"><Input value={form.matricula} onChange={e => set('matricula', e.target.value)} /></Field>
             <Field label="CPF"><Input value={form.cpf} onChange={e => set('cpf', e.target.value)} placeholder="000.000.000-00" /></Field>
+            <Field label="Data de Admissão"><Input type="date" value={form.admissaoEm} onChange={e => set('admissaoEm', e.target.value)} /></Field>
           </div>
         </section>
 

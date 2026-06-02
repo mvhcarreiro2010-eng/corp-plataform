@@ -1,21 +1,19 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { BarChart2, Users, BookOpen, ClipboardList, Rocket, TrendingUp, RefreshCw } from 'lucide-react'
+import { BarChart2, Users, BookOpen, ClipboardList, Rocket, TrendingUp, RefreshCw, Clock } from 'lucide-react'
 
+interface DashUser {
+  id: string; name: string; role: string; admissaoEm: string | null; tempoDeCasaDias: number | null
+  bu: { name: string } | null; lider: { name: string } | null; coordenador: { name: string } | null
+  _count: { tentativas: number }
+}
 interface DashData {
-  scope: string
-  totalUsers: number
+  scope: string; totalUsers: number
   courses: { total: number; completed: number; inProgress: number }
   assessments: { total: number; avgNota: number | null; aprovados: number; reprovados: number }
   induction: { totalSteps: number; completedSteps: number }
-  users: {
-    id: string; name: string; role: string
-    bu: { name: string } | null
-    lider: { name: string } | null
-    coordenador: { name: string } | null
-    _count: { tentativas: number }
-  }[]
+  users: DashUser[]
 }
 
 const ROLE_LABELS: Record<string, string> = {
@@ -23,9 +21,25 @@ const ROLE_LABELS: Record<string, string> = {
   COORDINATOR: 'Coordenador', LEADER: 'Líder', INSTRUCTOR: 'Instrutor', EDITOR: 'Editor',
 }
 
+function formatTempo(dias: number | null): string {
+  if (dias === null) return '—'
+  if (dias < 30) return `${dias}d`
+  if (dias < 365) return `${Math.floor(dias / 30)}m`
+  const anos = Math.floor(dias / 365)
+  const meses = Math.floor((dias % 365) / 30)
+  return meses > 0 ? `${anos}a ${meses}m` : `${anos}a`
+}
+
+function tempoColor(dias: number | null): string {
+  if (dias === null) return 'text-gray-400'
+  if (dias <= 30) return 'text-green-600 font-semibold'
+  if (dias <= 90) return 'text-blue-600'
+  if (dias <= 365) return 'text-purple-600'
+  return 'text-gray-600'
+}
+
 function StatCard({ icon: Icon, label, value, sub, color }: {
-  icon: React.ComponentType<{ className?: string }>
-  label: string; value: string | number; sub?: string; color: string
+  icon: React.ComponentType<{ className?: string }>; label: string; value: string | number; sub?: string; color: string
 }) {
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-4">
@@ -46,25 +60,19 @@ export default function DashboardPage() {
 
   const load = useCallback(async () => {
     const res = await fetch('/api/dashboard')
-    if (res.ok) {
-      setData(await res.json())
-      setLastUpdate(new Date())
-    }
+    if (res.ok) { setData(await res.json()); setLastUpdate(new Date()) }
     setLoading(false)
   }, [])
 
   useEffect(() => {
     load()
-    const interval = setInterval(load, 30000) // poll every 30s
+    const interval = setInterval(load, 30000)
     return () => clearInterval(interval)
   }, [load])
 
   if (loading) return <div className="flex items-center justify-center min-h-screen text-gray-400">Carregando...</div>
   if (!data) return null
 
-  const courseCompletePct = data.courses.total > 0
-    ? Math.round((data.courses.completed / (data.totalUsers * data.courses.total || 1)) * 100)
-    : 0
   const inductionPct = data.induction.totalSteps > 0 && data.totalUsers > 0
     ? Math.round((data.induction.completedSteps / (data.totalUsers * data.induction.totalSteps)) * 100)
     : 0
@@ -75,92 +83,85 @@ export default function DashboardPage() {
         <div className="flex items-center gap-3">
           <BarChart2 className="w-6 h-6 text-purple-600" />
           <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-          <span className="text-xs text-gray-400">{ROLE_LABELS[data.scope] ?? data.scope}</span>
+          <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{ROLE_LABELS[data.scope] ?? data.scope}</span>
         </div>
         <div className="flex items-center gap-2 text-xs text-gray-400">
           <RefreshCw className="w-3 h-3" />
-          <span>Atualiza em 30s · Última: {lastUpdate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+          <span>Atualiza em 30s · {lastUpdate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
         </div>
       </div>
 
-      {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <StatCard icon={Users} label="Usuários" value={data.totalUsers} color="bg-blue-500" />
-        <StatCard
-          icon={BookOpen} label="Cursos concluídos" value={data.courses.completed}
-          sub={`${data.courses.inProgress} em andamento · ${courseCompletePct}%`} color="bg-green-500"
-        />
-        <StatCard
-          icon={ClipboardList} label="Nota média"
+        <StatCard icon={BookOpen} label="Cursos concluídos" value={data.courses.completed}
+          sub={`${data.courses.inProgress} em andamento`} color="bg-green-500" />
+        <StatCard icon={ClipboardList} label="Nota média"
           value={data.assessments.avgNota !== null ? data.assessments.avgNota.toFixed(1) : '—'}
-          sub={`${data.assessments.aprovados} aprovados · ${data.assessments.reprovados} reprovados`}
-          color="bg-orange-500"
-        />
-        <StatCard
-          icon={Rocket} label="Progresso Indução"
-          value={`${inductionPct}%`}
-          sub={`${data.induction.completedSteps} etapas concluídas`}
-          color="bg-purple-500"
-        />
+          sub={`${data.assessments.aprovados} aprov. · ${data.assessments.reprovados} reprov.`} color="bg-orange-500" />
+        <StatCard icon={Rocket} label="Progresso Indução" value={`${inductionPct}%`}
+          sub={`${data.induction.completedSteps} etapas concluídas`} color="bg-purple-500" />
       </div>
 
-      {/* Assessment donut-style bars */}
       <div className="grid grid-cols-2 gap-4 mb-6">
         <div className="bg-white border border-gray-200 rounded-xl p-4">
           <p className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
             <ClipboardList className="w-4 h-4 text-orange-500" />Avaliações
           </p>
-          <div className="space-y-2">
-            <div className="flex justify-between text-xs text-gray-500">
-              <span>Aprovados</span><span className="font-medium text-green-600">{data.assessments.aprovados}</span>
+          {[
+            { label: 'Aprovados', value: data.assessments.aprovados, color: 'bg-green-500', textColor: 'text-green-600' },
+            { label: 'Reprovados', value: data.assessments.reprovados, color: 'bg-red-400', textColor: 'text-red-600' },
+          ].map(row => (
+            <div key={row.label} className="mb-2">
+              <div className="flex justify-between text-xs text-gray-500 mb-1">
+                <span>{row.label}</span>
+                <span className={`font-medium ${row.textColor}`}>{row.value}</span>
+              </div>
+              <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                <div className={`h-full ${row.color} rounded-full`}
+                  style={{ width: `${data.assessments.total > 0 ? (row.value / data.assessments.total) * 100 : 0}%` }} />
+              </div>
             </div>
-            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-              <div className="h-full bg-green-500 rounded-full" style={{ width: `${data.assessments.total > 0 ? (data.assessments.aprovados / data.assessments.total) * 100 : 0}%` }} />
-            </div>
-            <div className="flex justify-between text-xs text-gray-500">
-              <span>Reprovados</span><span className="font-medium text-red-600">{data.assessments.reprovados}</span>
-            </div>
-            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-              <div className="h-full bg-red-400 rounded-full" style={{ width: `${data.assessments.total > 0 ? (data.assessments.reprovados / data.assessments.total) * 100 : 0}%` }} />
-            </div>
-          </div>
+          ))}
         </div>
 
         <div className="bg-white border border-gray-200 rounded-xl p-4">
           <p className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
             <TrendingUp className="w-4 h-4 text-blue-500" />Cursos
           </p>
-          <div className="space-y-2">
-            <div className="flex justify-between text-xs text-gray-500">
-              <span>Concluídos</span><span className="font-medium text-green-600">{data.courses.completed}</span>
+          {[
+            { label: 'Concluídos', value: data.courses.completed, color: 'bg-green-500' },
+            { label: 'Em andamento', value: data.courses.inProgress, color: 'bg-blue-400' },
+          ].map(row => (
+            <div key={row.label} className="mb-2">
+              <div className="flex justify-between text-xs text-gray-500 mb-1">
+                <span>{row.label}</span><span>{row.value}</span>
+              </div>
+              <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                <div className={`h-full ${row.color} rounded-full`}
+                  style={{ width: `${data.courses.inProgress + data.courses.completed > 0 ? (row.value / (data.courses.inProgress + data.courses.completed)) * 100 : 0}%` }} />
+              </div>
             </div>
-            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-              <div className="h-full bg-green-500 rounded-full" style={{ width: `${data.courses.inProgress + data.courses.completed > 0 ? (data.courses.completed / (data.courses.inProgress + data.courses.completed)) * 100 : 0}%` }} />
-            </div>
-            <div className="flex justify-between text-xs text-gray-500">
-              <span>Em andamento</span><span>{data.courses.inProgress}</span>
-            </div>
-            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-              <div className="h-full bg-blue-400 rounded-full" style={{ width: `${data.courses.inProgress + data.courses.completed > 0 ? (data.courses.inProgress / (data.courses.inProgress + data.courses.completed)) * 100 : 0}%` }} />
-            </div>
-          </div>
+          ))}
         </div>
       </div>
 
-      {/* Users table */}
+      {/* Users table with tempo de casa */}
       {data.users.length > 0 && (
         <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-          <div className="px-4 py-3 border-b border-gray-100">
-            <h2 className="text-sm font-semibold text-gray-700">Usuários sob sua visão ({data.users.length})</h2>
+          <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
+            <Clock className="w-4 h-4 text-gray-400" />
+            <h2 className="text-sm font-semibold text-gray-700">Usuários ({data.users.length})</h2>
           </div>
-          <div className="overflow-auto max-h-96">
+          <div className="overflow-auto max-h-[500px]">
             <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-gray-50 border-b border-gray-100 text-xs font-medium text-gray-500 uppercase tracking-wide">
+              <thead className="sticky top-0 bg-gray-50">
+                <tr className="border-b border-gray-100 text-xs font-medium text-gray-500 uppercase tracking-wide">
                   <th className="px-4 py-2 text-left">Nome</th>
                   <th className="px-4 py-2 text-left">Perfil</th>
                   <th className="px-4 py-2 text-left">BU</th>
                   <th className="px-4 py-2 text-left">Líder</th>
+                  <th className="px-4 py-2 text-left">Admissão</th>
+                  <th className="px-4 py-2 text-left">Tempo de Casa</th>
                   <th className="px-4 py-2 text-left">Tentativas</th>
                 </tr>
               </thead>
@@ -171,6 +172,12 @@ export default function DashboardPage() {
                     <td className="px-4 py-2 text-gray-500">{ROLE_LABELS[u.role] ?? u.role}</td>
                     <td className="px-4 py-2 text-gray-500">{u.bu?.name ?? '—'}</td>
                     <td className="px-4 py-2 text-gray-500">{u.lider?.name ?? '—'}</td>
+                    <td className="px-4 py-2 text-gray-500 text-xs">
+                      {u.admissaoEm ? new Date(u.admissaoEm).toLocaleDateString('pt-BR') : '—'}
+                    </td>
+                    <td className={`px-4 py-2 text-xs font-mono ${tempoColor(u.tempoDeCasaDias)}`}>
+                      {formatTempo(u.tempoDeCasaDias)}
+                    </td>
                     <td className="px-4 py-2 text-gray-500">{u._count.tentativas}</td>
                   </tr>
                 ))}
