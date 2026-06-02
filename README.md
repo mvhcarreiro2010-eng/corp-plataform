@@ -1,6 +1,46 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# CorpHub — Plataforma Corporativa de Interatividade e Ensino
 
-## Getting Started
+Uma plataforma que combina LMS + CMS + Rede Social Interna.
+
+## Como Rodar
+
+### 1. Instalar dependências
+```bash
+npm install
+```
+
+### 2. Configurar .env (copie de .env.example)
+```env
+DATABASE_URL="postgresql://user:pass@host/db?sslmode=require"
+AUTH_SECRET="sua-chave-secreta"
+NEXTAUTH_URL="http://localhost:3000"
+ANTHROPIC_API_KEY=""   # opcional - chatbot IA
+```
+
+### 3. Banco de dados
+```bash
+npm run db:generate   # gera o cliente Prisma
+npm run db:migrate    # cria tabelas
+npm run db:seed       # popula dados de exemplo
+```
+
+### 4. Iniciar
+```bash
+npm run dev
+```
+
+## Credenciais de Teste
+
+| Usuário | E-mail | Senha |
+|---------|--------|-------|
+| Admin | admin@empresa.com | admin123 |
+| RH | rh@empresa.com | user123 |
+| Gestor | gestor@empresa.com | user123 |
+| Colaborador | colaborador@empresa.com | user123 |
+
+---
+
+## Desenvolvimento original
 
 First, run the development server:
 

@@ -1,0 +1,365 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// USUÁRIOS E AUTENTICAÇÃO
+// ============================================================
+
+model User {
+  id         String   @id @default(cuid())
+  name       String
+  email      String   @unique
+  password   String
+  avatar     String?
+  role       Role     @default(EMPLOYEE)
+  department String?
+  jobTitle   String?
+  bio        String?
+  xp         Int      @default(0)
+  level      Int      @default(1)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  posts             Post[]
+  comments          Comment[]
+  likes             Like[]
+  messages          Message[]
+  channelMember     ChannelMember[]
+  progress          Progress[]
+  badges            UserBadge[]
+  inductionProgress InductionProgress[]
+  notifications     Notification[]
+
+  @@map("users")
+}
+
+enum Role {
+  ADMIN
+  HR
+  MANAGER
+  EMPLOYEE
+}
+
+// ============================================================
+// FEED SOCIAL
+// ============================================================
+
+model Post {
+  id        String    @id @default(cuid())
+  content   String    @db.Text
+  mediaUrl  String?
+  mediaType String?
+  pinned    Boolean   @default(false)
+  authorId  String
+  author    User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  comments  Comment[]
+  likes     Like[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@map("posts")
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  content   String   @db.Text
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@map("comments")
+}
+
+model Like {
+  id        String   @id @default(cuid())
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([postId, userId])
+  @@map("likes")
+}
+
+// ============================================================
+// WIKI DE CONHECIMENTO
+// ============================================================
+
+model WikiCategory {
+  id       String         @id @default(cuid())
+  name     String
+  slug     String         @unique
+  icon     String?
+  color    String?
+  parentId String?
+  parent   WikiCategory?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children WikiCategory[] @relation("CategoryTree")
+  pages    WikiPage[]
+  order    Int            @default(0)
+
+  @@map("wiki_categories")
+}
+
+model WikiPage {
+  id         String       @id @default(cuid())
+  title      String
+  slug       String       @unique
+  content    String       @db.Text
+  excerpt    String?
+  categoryId String
+  category   WikiCategory @relation(fields: [categoryId], references: [id])
+  authorId   String
+  published  Boolean      @default(true)
+  views      Int          @default(0)
+  updatedAt  DateTime     @updatedAt
+  createdAt  DateTime     @default(now())
+
+  @@map("wiki_pages")
+}
+
+// ============================================================
+// COMUNIDADE (CHAT)
+// ============================================================
+
+model Channel {
+  id          String          @id @default(cuid())
+  name        String
+  description String?
+  type        ChannelType     @default(PUBLIC)
+  icon        String?
+  messages    Message[]
+  members     ChannelMember[]
+  createdAt   DateTime        @default(now())
+
+  @@map("channels")
+}
+
+enum ChannelType {
+  PUBLIC
+  PRIVATE
+  DM
+}
+
+model ChannelMember {
+  id        String   @id @default(cuid())
+  channelId String
+  channel   Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  joinedAt  DateTime @default(now())
+
+  @@unique([channelId, userId])
+  @@map("channel_members")
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  content   String   @db.Text
+  mediaUrl  String?
+  channelId String
+  channel   Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@map("messages")
+}
+
+// ============================================================
+// E-LEARNING
+// ============================================================
+
+model Course {
+  id          String     @id @default(cuid())
+  title       String
+  description String     @db.Text
+  thumbnail   String?
+  xpReward    Int        @default(100)
+  published   Boolean    @default(false)
+  modules     Module[]
+  progress    Progress[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@map("courses")
+}
+
+model Module {
+  id       String   @id @default(cuid())
+  title    String
+  order    Int      @default(0)
+  courseId String
+  course   Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessons  Lesson[]
+
+  @@map("modules")
+}
+
+model Lesson {
+  id       String     @id @default(cuid())
+  title    String
+  content  String?    @db.Text
+  videoUrl String?
+  type     LessonType @default(TEXT)
+  order    Int        @default(0)
+  xpReward Int        @default(20)
+  duration Int?
+  moduleId String
+  module   Module     @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  progress Progress[]
+  quizzes  Quiz[]
+
+  @@map("lessons")
+}
+
+enum LessonType {
+  VIDEO
+  TEXT
+  QUIZ
+  PDF
+}
+
+model Quiz {
+  id       String   @id @default(cuid())
+  question String   @db.Text
+  options  String[]
+  answer   Int
+  lessonId String
+  lesson   Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@map("quizzes")
+}
+
+model Progress {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lessonId    String?
+  lesson      Lesson?   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  courseId    String?
+  course      Course?   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  completed   Boolean   @default(false)
+  score       Int?
+  completedAt DateTime?
+
+  @@unique([userId, lessonId])
+  @@map("progress")
+}
+
+// ============================================================
+// GAMIFICAÇÃO
+// ============================================================
+
+model Badge {
+  id          String      @id @default(cuid())
+  name        String
+  description String
+  icon        String
+  condition   String
+  xpRequired  Int?
+  users       UserBadge[]
+
+  @@map("badges")
+}
+
+model UserBadge {
+  id       String   @id @default(cuid())
+  userId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badgeId  String
+  badge    Badge    @relation(fields: [badgeId], references: [id])
+  earnedAt DateTime @default(now())
+
+  @@unique([userId, badgeId])
+  @@map("user_badges")
+}
+
+// ============================================================
+// INDUÇÃO (ONBOARDING - ESTILO DUOLINGO)
+// ============================================================
+
+model InductionTrail {
+  id          String          @id @default(cuid())
+  title       String
+  description String?
+  published   Boolean         @default(false)
+  steps       InductionStep[]
+  createdAt   DateTime        @default(now())
+
+  @@map("induction_trails")
+}
+
+model InductionStep {
+  id       String              @id @default(cuid())
+  title    String
+  content  String              @db.Text
+  type     StepType            @default(LESSON)
+  order    Int                 @default(0)
+  xpReward Int                 @default(50)
+  mediaUrl String?
+  trailId  String
+  trail    InductionTrail      @relation(fields: [trailId], references: [id], onDelete: Cascade)
+  progress InductionProgress[]
+  quizzes  InductionQuiz[]
+
+  @@map("induction_steps")
+}
+
+enum StepType {
+  LESSON
+  QUIZ
+  VIDEO
+  TASK
+}
+
+model InductionQuiz {
+  id       String        @id @default(cuid())
+  question String        @db.Text
+  options  String[]
+  answer   Int
+  stepId   String
+  step     InductionStep @relation(fields: [stepId], references: [id], onDelete: Cascade)
+
+  @@map("induction_quizzes")
+}
+
+model InductionProgress {
+  id          String        @id @default(cuid())
+  userId      String
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stepId      String
+  step        InductionStep @relation(fields: [stepId], references: [id], onDelete: Cascade)
+  completed   Boolean       @default(false)
+  score       Int?
+  completedAt DateTime?
+
+  @@unique([userId, stepId])
+  @@map("induction_progress")
+}
+
+// ============================================================
+// NOTIFICAÇÕES
+// ============================================================
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  type      String
+  read      Boolean  @default(false)
+  link      String?
+  createdAt DateTime @default(now())
+
+  @@map("notifications")
+}
