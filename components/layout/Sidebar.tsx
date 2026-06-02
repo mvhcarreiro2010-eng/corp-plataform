@@ -6,7 +6,7 @@ import {
   Home, BookOpen, MessageSquare, GraduationCap, Rocket, User,
   ChevronLeft, ChevronRight, ChevronDown, Building2, Newspaper,
   FolderOpen, BookMarked, ClipboardList, BarChart2, Users, Video,
-  ShoppingBag, UsersRound, MessagesSquare, Bell, LayoutGrid, Settings,
+  ShoppingBag, UsersRound, MessagesSquare, Bell, Settings, Trophy,
 } from 'lucide-react'
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
@@ -21,6 +21,7 @@ const navItems = [
   { href: '/inducao',       label: 'Indução',      icon: Rocket },
   { href: '/treinamentos',  label: 'Treinamentos', icon: Video },
   { href: '/avaliacoes',    label: 'Avaliações',   icon: ClipboardList },
+  { href: '/ranking',       label: 'Ranking',      icon: Trophy },
   { href: '/loja',          label: 'Loja',         icon: ShoppingBag },
 ]
 

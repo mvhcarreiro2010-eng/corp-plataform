@@ -2,10 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import {
-  Home, BookOpen, MessageSquare, GraduationCap, User,
-  Bell, ClipboardList, Rocket, BarChart2,
-} from 'lucide-react'
+import { Home, MessageSquare, GraduationCap, User, Trophy } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useSession } from 'next-auth/react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -23,8 +20,8 @@ export function MobileNav() {
   const tabs = [
     { href: '/feed',        icon: Home,          label: 'Feed' },
     { href: '/comunidade',  icon: MessageSquare,  label: 'Comunidade' },
+    { href: '/ranking',     icon: Trophy,         label: 'Ranking' },
     { href: '/aprendizado', icon: GraduationCap,  label: 'Aprender' },
-    { href: '/comunicados', icon: Bell,           label: 'Avisos' },
   ]
 
   return (
