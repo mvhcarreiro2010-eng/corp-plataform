@@ -59,6 +59,8 @@ model User {
   ativo         Boolean  @default(true)
   xp            Int      @default(0)
   level         Int      @default(1)
+  lastLoginAt   DateTime?
+  lastSeenAt    DateTime?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -94,6 +96,7 @@ model User {
   comunicadoAceites ComunicadoAceite[]
   humorCheckIns     HumorCheckIn[]
   wikiViews         WikiPageView[]
+  postViews         PostView[]
 
   @@map("users")
 }
@@ -114,21 +117,33 @@ enum Role {
 // ============================================================
 
 model Post {
-  id         String    @id @default(cuid())
-  content    String    @db.Text
+  id         String     @id @default(cuid())
+  content    String     @db.Text
   mediaUrl   String?
   mediaType  String?
-  pinned     Boolean   @default(false)
-  buIds      String[]  @default([])
-  roleFilter String[]  @default([])
+  pinned     Boolean    @default(false)
+  buIds      String[]   @default([])
+  roleFilter String[]   @default([])
   authorId   String
-  author     User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  author     User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
   comments   Comment[]
   likes      Like[]
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+  postViews  PostView[]
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
 
   @@map("posts")
+}
+
+model PostView {
+  userId   String
+  postId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post     Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  viewedAt DateTime @default(now())
+
+  @@id([userId, postId])
+  @@map("post_views")
 }
 
 model Comment {
@@ -275,18 +290,19 @@ model Module {
 }
 
 model Lesson {
-  id       String     @id @default(cuid())
-  title    String
-  content  String?    @db.Text
-  videoUrl String?
-  type     LessonType @default(TEXT)
-  order    Int        @default(0)
-  xpReward Int        @default(20)
-  duration Int?
-  moduleId String
-  module   Module     @relation(fields: [moduleId], references: [id], onDelete: Cascade)
-  progress Progress[]
-  quizzes  Quiz[]
+  id        String     @id @default(cuid())
+  title     String
+  content   String?    @db.Text
+  videoUrl  String?
+  scormPath String?
+  type      LessonType @default(TEXT)
+  order     Int        @default(0)
+  xpReward  Int        @default(20)
+  duration  Int?
+  moduleId  String
+  module    Module     @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  progress  Progress[]
+  quizzes   Quiz[]
 
   @@map("lessons")
 }
@@ -296,6 +312,7 @@ enum LessonType {
   TEXT
   QUIZ
   PDF
+  SCORM
 }
 
 model Quiz {
@@ -489,14 +506,24 @@ model Avaliacao {
   @@map("avaliacoes")
 }
 
+enum TipoQuestao {
+  MULTIPLA_ESCOLHA
+  VERDADEIRO_FALSO
+  MULTIPLA_RESPOSTA
+  TEXTO_LIVRE
+}
+
 model Questao {
-  id          String    @id @default(cuid())
-  enunciado   String    @db.Text
-  options     String[]
-  answer      Int
-  ordem       Int       @default(0)
+  id          String      @id @default(cuid())
+  tipo        TipoQuestao @default(MULTIPLA_ESCOLHA)
+  enunciado   String      @db.Text
+  options     String[]    @default([])
+  answer      Int         @default(0)
+  answers     Int[]       @default([])
+  gabarito    String?
+  ordem       Int         @default(0)
   avaliacaoId String
-  avaliacao   Avaliacao @relation(fields: [avaliacaoId], references: [id], onDelete: Cascade)
+  avaliacao   Avaliacao   @relation(fields: [avaliacaoId], references: [id], onDelete: Cascade)
 
   @@map("questoes")
 }

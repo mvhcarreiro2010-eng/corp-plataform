@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import {
   BarChart2, Users, BookOpen, ClipboardList, Rocket, TrendingUp, RefreshCw, Clock,
   Bell, Smile, ChevronDown, ChevronRight, Download, AlertTriangle, CheckCircle2, Eye,
+  Activity, MessageSquare, Filter,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
@@ -33,6 +34,14 @@ interface ComPendente { id: string; title: string; urgente: boolean; total: numb
 interface WikiPendente { id: string; title: string; slug: string; total: number; visualizados: number; pendentes: PendenteUser[] }
 interface HumorDay { data: string; avg: number; count: number }
 interface HumorDist { humor: number; count: number }
+interface AtividadeUser {
+  id: string; name: string; email: string; role: string; jobTitle: string | null
+  bu: string | null; lider: string | null
+  lastLoginAt: string | null; lastSeenAt: string | null
+  status: 'online' | 'away' | 'recent' | 'offline'
+  comments: number; feedsVistos: number
+  comunicadosAceitos: number; comunicadosTotal: number
+}
 
 const ROLE_LABELS: Record<string, string> = {
   ADMIN: 'Admin', HR: 'RH', MANAGER: 'Gestor', EMPLOYEE: 'Colaborador',
@@ -80,8 +89,29 @@ const TABS = [
   { id: 'comunicados', label: 'Comunicados', icon: Bell },
   { id: 'wiki', label: 'Wiki', icon: Eye },
   { id: 'humor', label: 'Humor', icon: Smile },
+  { id: 'atividade', label: 'Atividade', icon: Activity },
 ] as const
 type TabId = typeof TABS[number]['id']
+
+const STATUS_CONFIG = {
+  online: { dot: 'bg-green-500', label: 'Online', text: 'text-green-600' },
+  away: { dot: 'bg-yellow-400', label: 'Ausente', text: 'text-yellow-600' },
+  recent: { dot: 'bg-gray-400', label: 'Recente', text: 'text-gray-500' },
+  offline: { dot: 'bg-gray-200', label: 'Inativo', text: 'text-gray-400' },
+}
+
+function timeAgoShort(dateStr: string | null): string {
+  if (!dateStr) return '—'
+  const diff = Date.now() - new Date(dateStr).getTime()
+  const min = Math.floor(diff / 60000)
+  const h = Math.floor(diff / 3600000)
+  const d = Math.floor(diff / 86400000)
+  if (min < 2) return 'agora'
+  if (min < 60) return `${min}min`
+  if (h < 24) return `${h}h`
+  if (d < 30) return `${d}d`
+  return new Date(dateStr).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+}
 
 function PendentesList({ pendentes }: { pendentes: PendenteUser[] }) {
   const [open, setOpen] = useState(false)
@@ -133,6 +163,13 @@ export default function DashboardPage() {
   const [humorDist, setHumorDist] = useState<HumorDist[]>([])
   const [humorTodayCount, setHumorTodayCount] = useState(0)
   const [loadingHumor, setLoadingHumor] = useState(false)
+
+  // Atividade tab
+  const [atividadeUsers, setAtividadeUsers] = useState<AtividadeUser[]>([])
+  const [atividadeBus, setAtividadeBus] = useState<BuOpt[]>([])
+  const [filterAtBu, setFilterAtBu] = useState('')
+  const [filterAtStatus, setFilterAtStatus] = useState('')
+  const [loadingAt, setLoadingAt] = useState(false)
 
   const loadGeral = useCallback(async () => {
     const res = await fetch('/api/dashboard')
@@ -200,6 +237,24 @@ export default function DashboardPage() {
     }
     load()
   }, [tab])
+
+  // Load atividade tab
+  useEffect(() => {
+    if (tab !== 'atividade') return
+    const load = async () => {
+      setLoadingAt(true)
+      const params = new URLSearchParams()
+      if (filterAtBu) params.set('buId', filterAtBu)
+      const res = await fetch(`/api/dashboard/atividade?${params}`)
+      if (res.ok) {
+        const d = await res.json()
+        setAtividadeUsers(d.users ?? [])
+        setAtividadeBus(d.bus ?? [])
+      }
+      setLoadingAt(false)
+    }
+    load()
+  }, [tab, filterAtBu])
 
   if (loading) return <div className="flex items-center justify-center min-h-screen text-gray-400">Carregando...</div>
   if (!data) return null
@@ -578,6 +633,126 @@ export default function DashboardPage() {
                 </div>
               )}
             </>
+          )}
+        </div>
+      )}
+
+      {/* ---- ATIVIDADE ---- */}
+      {tab === 'atividade' && (
+        <div className="space-y-4">
+          {/* Filters */}
+          <div className="bg-white border border-gray-200 rounded-xl p-4 flex flex-wrap gap-3 items-end">
+            <Filter className="w-4 h-4 text-gray-400 self-center" />
+            <div>
+              <label className="text-xs text-gray-500 mb-1 block">BU</label>
+              <select value={filterAtBu} onChange={e => setFilterAtBu(e.target.value)}
+                className="h-9 px-3 text-sm border border-gray-200 rounded-lg bg-white">
+                <option value="">Todas as BUs</option>
+                {atividadeBus.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs text-gray-500 mb-1 block">Status</label>
+              <select value={filterAtStatus} onChange={e => setFilterAtStatus(e.target.value)}
+                className="h-9 px-3 text-sm border border-gray-200 rounded-lg bg-white">
+                <option value="">Todos</option>
+                <option value="online">🟢 Online</option>
+                <option value="away">🟡 Ausente</option>
+                <option value="recent">⚪ Recente</option>
+                <option value="offline">⚫ Inativo</option>
+              </select>
+            </div>
+            <div className="ml-auto flex gap-4 text-xs text-gray-500 self-center">
+              {(['online', 'away', 'recent', 'offline'] as const).map(s => {
+                const count = atividadeUsers.filter(u => u.status === s).length
+                const cfg = STATUS_CONFIG[s]
+                return count > 0 ? (
+                  <span key={s} className="flex items-center gap-1.5">
+                    <span className={`w-2 h-2 rounded-full ${cfg.dot}`} />
+                    <span className={cfg.text}>{count} {cfg.label}</span>
+                  </span>
+                ) : null
+              })}
+            </div>
+          </div>
+
+          {loadingAt ? (
+            <div className="text-center py-12 text-gray-400">Carregando...</div>
+          ) : atividadeUsers.length === 0 ? (
+            <div className="text-center py-12 text-gray-400">Nenhum usuário encontrado</div>
+          ) : (
+            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+              <div className="overflow-auto max-h-[600px]">
+                <table className="w-full text-sm">
+                  <thead className="sticky top-0 bg-gray-50 z-10">
+                    <tr className="border-b border-gray-100 text-xs font-medium text-gray-500 uppercase tracking-wide">
+                      <th className="px-4 py-2 text-left">Usuário</th>
+                      <th className="px-4 py-2 text-left">Status</th>
+                      <th className="px-4 py-2 text-left">Último acesso</th>
+                      <th className="px-4 py-2 text-left">Último login</th>
+                      <th className="px-4 py-2 text-center">Feed visto</th>
+                      <th className="px-4 py-2 text-center">Comentários</th>
+                      <th className="px-4 py-2 text-center">Comunicados</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {atividadeUsers
+                      .filter(u => !filterAtStatus || u.status === filterAtStatus)
+                      .map(u => {
+                        const cfg = STATUS_CONFIG[u.status]
+                        const comPct = u.comunicadosTotal > 0
+                          ? Math.round((u.comunicadosAceitos / u.comunicadosTotal) * 100)
+                          : null
+                        return (
+                          <tr key={u.id} className="hover:bg-gray-50 transition-colors">
+                            <td className="px-4 py-3">
+                              <p className="font-medium text-gray-900">{u.name}</p>
+                              <p className="text-xs text-gray-400">{u.bu ?? ROLE_LABELS[u.role]}</p>
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className="flex items-center gap-1.5">
+                                <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${cfg.dot} ${u.status === 'online' ? 'animate-pulse' : ''}`} />
+                                <span className={`text-xs font-medium ${cfg.text}`}>{cfg.label}</span>
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-xs text-gray-500">
+                              {timeAgoShort(u.lastSeenAt)}
+                            </td>
+                            <td className="px-4 py-3 text-xs text-gray-500">
+                              {u.lastLoginAt
+                                ? new Date(u.lastLoginAt).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })
+                                : '—'}
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <span className="flex items-center justify-center gap-1 text-xs text-blue-600">
+                                <Eye className="w-3 h-3" />{u.feedsVistos}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <span className="flex items-center justify-center gap-1 text-xs text-purple-600">
+                                <MessageSquare className="w-3 h-3" />{u.comments}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              {comPct !== null ? (
+                                <span className={`text-xs font-semibold ${comPct === 100 ? 'text-green-600' : comPct >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
+                                  {u.comunicadosAceitos}/{u.comunicadosTotal}
+                                </span>
+                              ) : (
+                                <span className="text-xs text-gray-400">—</span>
+                              )}
+                            </td>
+                          </tr>
+                        )
+                      })}
+                  </tbody>
+                </table>
+              </div>
+              <div className="px-4 py-2 border-t border-gray-100 text-xs text-gray-400">
+                {atividadeUsers.filter(u => !filterAtStatus || u.status === filterAtStatus).length} usuários
+                · {atividadeUsers.filter(u => u.status === 'online').length} online agora
+              </div>
+            </div>
           )}
         </div>
       )}

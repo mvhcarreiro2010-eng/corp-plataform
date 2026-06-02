@@ -36,6 +36,9 @@ export default function FeedPage() {
       setPosts(data.posts)
       setNextCursor(data.nextCursor)
       setLoading(false)
+      // Track views for all loaded posts
+      const ids = (data.posts as Post[]).map((p) => p.id)
+      if (ids.length > 0) fetch('/api/feed/view', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ postIds: ids }) }).catch(() => {})
     })
   }, [fetchPosts])
 
@@ -46,6 +49,8 @@ export default function FeedPage() {
     setPosts((prev) => [...prev, ...data.posts])
     setNextCursor(data.nextCursor)
     setLoadingMore(false)
+    const ids = (data.posts as Post[]).map((p) => p.id)
+    if (ids.length > 0) fetch('/api/feed/view', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ postIds: ids }) }).catch(() => {})
   }
 
   const handleLike = async (postId: string) => {

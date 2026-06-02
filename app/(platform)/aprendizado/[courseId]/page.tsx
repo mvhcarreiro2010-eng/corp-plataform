@@ -2,16 +2,19 @@
 
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, CheckCircle, Circle, Play, FileText, HelpCircle, Loader2, Star, Lock } from 'lucide-react'
+import { ArrowLeft, CheckCircle, Circle, Play, FileText, HelpCircle, Loader2, Star, Gamepad2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
+import dynamic from 'next/dynamic'
+
+const ScormPlayer = dynamic(() => import('@/components/ScormPlayer'), { ssr: false })
 
 type Quiz = { id: string; question: string; options: string[]; answer: number }
 type Lesson = {
   id: string; title: string; content: string | null; videoUrl: string | null
-  type: string; order: number; xpReward: number
+  scormPath: string | null; type: string; order: number; xpReward: number
   progress: { completed: boolean; score: number | null }[]
   quizzes: Quiz[]
 }
@@ -81,6 +84,7 @@ export default function CoursePage() {
   const lessonIcon = (type: string) => {
     if (type === 'VIDEO') return <Play className="w-4 h-4" />
     if (type === 'QUIZ') return <HelpCircle className="w-4 h-4" />
+    if (type === 'SCORM') return <Gamepad2 className="w-4 h-4" />
     return <FileText className="w-4 h-4" />
   }
 
@@ -158,6 +162,15 @@ export default function CoursePage() {
               </div>
 
               <div className="p-6">
+                {/* SCORM */}
+                {activeLesson.type === 'SCORM' && activeLesson.scormPath && (
+                  <ScormPlayer
+                    src={activeLesson.scormPath}
+                    lessonId={activeLesson.id}
+                    onComplete={() => !isCompleted && completeLesson()}
+                  />
+                )}
+
                 {/* VIDEO */}
                 {activeLesson.type === 'VIDEO' && activeLesson.videoUrl && (
                   <div className="mb-6 rounded-xl overflow-hidden bg-black">
@@ -221,7 +234,7 @@ export default function CoursePage() {
                 )}
 
                 {/* Botão de concluir */}
-                {activeLesson.type !== 'QUIZ' && (
+                {activeLesson.type !== 'QUIZ' && activeLesson.type !== 'SCORM' && (
                   <div className="mt-6 flex justify-end">
                     <Button
                       onClick={() => completeLesson()}

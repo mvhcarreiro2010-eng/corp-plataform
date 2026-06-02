@@ -114,6 +114,7 @@ export async function PUT(req: NextRequest) {
         type: body.type,
         content: body.content,
         videoUrl: body.videoUrl ?? null,
+        scormPath: body.scormPath ?? null,
         order: body.order,
         xpReward: body.xpReward,
         duration: body.duration ?? null,

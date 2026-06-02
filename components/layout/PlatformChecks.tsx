@@ -31,14 +31,17 @@ export function PlatformChecks() {
     initialized.current = true
 
     const init = async () => {
-      // 1. Check humor for today
+      // 1. Initial heartbeat
+      fetch('/api/activity', { method: 'POST' }).catch(() => {})
+
+      // 2. Check humor for today
       try {
         const h = await fetch('/api/humor?type=today').then(r => r.json())
         if (!h.done) setShowHumor(true)
         else setHumorDone(true)
       } catch { /* silent */ }
 
-      // 2. Check pending urgent comunicados
+      // 3. Check pending urgent comunicados
       try {
         const coms: Comunicado[] = await fetch('/api/comunicados/pending').then(r => r.json())
         if (coms.length > 0) {
@@ -49,6 +52,13 @@ export function PlatformChecks() {
     }
 
     init()
+
+    // Heartbeat every 60 seconds
+    const heartbeat = setInterval(() => {
+      fetch('/api/activity', { method: 'POST' }).catch(() => {})
+    }, 60_000)
+
+    return () => clearInterval(heartbeat)
   }, [])
 
   const acceptComunicado = async () => {

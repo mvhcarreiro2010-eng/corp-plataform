@@ -13,7 +13,7 @@ import RichEditor from '@/components/editor/RichEditor'
 type Quiz = { id: string; question: string; options: string[]; answer: number }
 type Lesson = {
   id: string; title: string; type: string; content: string | null; videoUrl: string | null
-  order: number; xpReward: number; duration: number | null; quizzes: Quiz[]
+  scormPath: string | null; order: number; xpReward: number; duration: number | null; quizzes: Quiz[]
 }
 type Module = { id: string; title: string; order: number; lessons: Lesson[] }
 type Course = {
@@ -27,6 +27,7 @@ const LESSON_TYPES = [
   { value: 'VIDEO', label: '🎬 Vídeo' },
   { value: 'QUIZ', label: '🧠 Quiz' },
   { value: 'PDF', label: '📄 PDF' },
+  { value: 'SCORM', label: '🎮 SCORM' },
 ]
 
 function LessonEditor({ lesson, onUpdate, onDelete, onMoveUp, onMoveDown, isFirst, isLast }: {
@@ -39,21 +40,39 @@ function LessonEditor({ lesson, onUpdate, onDelete, onMoveUp, onMoveDown, isFirs
   const [type, setType] = useState(lesson.type)
   const [content, setContent] = useState(lesson.content ?? '')
   const [videoUrl, setVideoUrl] = useState(lesson.videoUrl ?? '')
+  const [scormPath, setScormPath] = useState(lesson.scormPath ?? '')
   const [xpReward, setXpReward] = useState(lesson.xpReward)
   const [duration, setDuration] = useState(lesson.duration ?? 0)
   const [quizzes, setQuizzes] = useState<Quiz[]>(lesson.quizzes)
   const [saving, setSaving] = useState(false)
+  const [uploadingScorm, setUploadingScorm] = useState(false)
+  const scormRef = useRef<HTMLInputElement>(null)
 
   const save = async () => {
     setSaving(true)
     const res = await fetch('/api/courses/admin', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ entity: 'lesson', id: lesson.id, title, type, content: content || null, videoUrl: videoUrl || null, xpReward, order: lesson.order, duration: duration || null }),
+      body: JSON.stringify({ entity: 'lesson', id: lesson.id, title, type, content: content || null, videoUrl: videoUrl || null, scormPath: scormPath || null, xpReward, order: lesson.order, duration: duration || null }),
     })
     const updated = await res.json()
     onUpdate({ ...updated, quizzes })
     setEditing(false); setSaving(false)
+  }
+
+  const uploadScorm = async (file: File) => {
+    setUploadingScorm(true)
+    const fd = new FormData()
+    fd.append('file', file)
+    fd.append('lessonId', lesson.id)
+    const res = await fetch('/api/courses/admin/scorm', { method: 'POST', body: fd })
+    const data = await res.json()
+    if (data.scormPath) {
+      setScormPath(data.scormPath)
+      setType('SCORM')
+      onUpdate({ ...lesson, scormPath: data.scormPath, type: 'SCORM' })
+    }
+    setUploadingScorm(false)
   }
 
   const addQuiz = async () => {
@@ -128,7 +147,7 @@ function LessonEditor({ lesson, onUpdate, onDelete, onMoveUp, onMoveDown, isFirs
                   <Input type="number" value={duration} onChange={(e) => setDuration(Number(e.target.value))} className="h-9" min={0} />
                 </div>
               </div>
-              {(type === 'VIDEO') && (
+              {type === 'VIDEO' && (
                 <div>
                   <label className="text-xs font-medium text-gray-600 mb-1 block">URL do vídeo (YouTube, Vimeo ou /uploads/videos/...)</label>
                   <Input value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} placeholder="https://..." className="h-9" />
@@ -138,6 +157,39 @@ function LessonEditor({ lesson, onUpdate, onDelete, onMoveUp, onMoveDown, isFirs
                 <div>
                   <label className="text-xs font-medium text-gray-600 mb-1 block">Conteúdo</label>
                   <RichEditor content={content} onChange={setContent} minHeight={200} />
+                </div>
+              )}
+              {type === 'SCORM' && (
+                <div className="space-y-2">
+                  <label className="text-xs font-medium text-gray-600 mb-1 block">Pacote SCORM (.zip)</label>
+                  {scormPath ? (
+                    <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+                      <span className="text-xs text-green-700 flex-1 truncate">✓ {scormPath}</span>
+                      <button onClick={() => scormRef.current?.click()} className="text-xs text-blue-600 hover:underline shrink-0">
+                        Substituir
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => scormRef.current?.click()}
+                      disabled={uploadingScorm}
+                      className="w-full border-2 border-dashed border-gray-300 rounded-xl p-4 text-sm text-gray-500 hover:border-blue-400 hover:text-blue-600 transition-colors flex items-center justify-center gap-2"
+                    >
+                      {uploadingScorm ? (
+                        <><Loader2 className="w-4 h-4 animate-spin" /> Extraindo SCORM...</>
+                      ) : (
+                        <><Upload className="w-4 h-4" /> Selecionar arquivo .zip</>
+                      )}
+                    </button>
+                  )}
+                  <input
+                    ref={scormRef}
+                    type="file"
+                    accept=".zip"
+                    className="hidden"
+                    onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadScorm(f); e.target.value = '' }}
+                  />
+                  <p className="text-xs text-gray-400">Faça upload do pacote SCORM 1.2 (.zip). O conteúdo será extraído automaticamente.</p>
                 </div>
               )}
               <div className="flex justify-end">

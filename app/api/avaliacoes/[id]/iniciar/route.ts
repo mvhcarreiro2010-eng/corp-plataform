@@ -30,7 +30,7 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
     // Return existing questions (without answers)
     const questoes = await prisma.questao.findMany({
       where: { id: { in: open.questoesIds } },
-      select: { id: true, enunciado: true, options: true, ordem: true },
+      select: { id: true, tipo: true, enunciado: true, options: true, ordem: true },
     })
     const ordered = open.questoesIds.map(qid => questoes.find(q => q.id === qid)).filter(Boolean)
     return NextResponse.json({
@@ -54,9 +54,10 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
     },
   })
 
-  // Return questions WITHOUT the answer field
+  // Return questions WITHOUT the answer/answers fields
   const questoesSemGabarito = picked.map(q => ({
     id: q.id,
+    tipo: q.tipo,
     enunciado: q.enunciado,
     options: q.options,
     ordem: q.ordem,
