@@ -80,7 +80,14 @@ export async function PUT(req: NextRequest) {
   if (body.entity === 'trail') {
     const trail = await prisma.inductionTrail.update({
       where: { id: body.id },
-      data: { title: body.title, description: body.description, published: body.published },
+      data: {
+        title: body.title,
+        description: body.description,
+        published: body.published,
+        ...(body.buIds !== undefined && { buIds: body.buIds }),
+        ...(body.roleFilter !== undefined && { roleFilter: body.roleFilter }),
+        ...(body.userIds !== undefined && { userIds: body.userIds }),
+      },
     })
     return NextResponse.json(trail)
   }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { slugify } from '@/lib/utils'
+import { buildSegFilter } from '@/lib/segmentation'
 
 // GET /api/wiki — Lista categorias com páginas
 export async function GET(req: NextRequest) {
@@ -12,15 +13,10 @@ export async function GET(req: NextRequest) {
   const q = searchParams.get('q')
 
   const isAdmin = ['ADMIN', 'HR'].includes(session.user.role)
-  const userBuId = session.user.buId
-  const userRole = session.user.role
 
   const pageSegFilter = isAdmin ? { published: true } : {
     published: true,
-    AND: [
-      { OR: [{ buIds: { isEmpty: true } }, ...(userBuId ? [{ buIds: { has: userBuId } }] : [])] },
-      { OR: [{ roleFilter: { isEmpty: true } }, { roleFilter: { has: userRole } }] },
-    ],
+    ...buildSegFilter(session.user),
   }
 
   if (q) {
@@ -100,6 +96,9 @@ export async function POST(req: NextRequest) {
       categoryId: body.categoryId,
       authorId: session.user.id,
       tags: body.tags ?? [],
+      buIds: body.buIds ?? [],
+      roleFilter: body.roleFilter ?? [],
+      userIds: body.userIds ?? [],
     },
   })
 

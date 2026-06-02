@@ -12,14 +12,17 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
     where: { id },
     include: { questoes: true },
   })
-  if (!av || !av.published) return NextResponse.json({ error: 'Avaliação não encontrada' }, { status: 404 })
+  const isAdmin = ['ADMIN', 'HR'].includes(session.user.role)
+  if (!av || (!av.published && !isAdmin)) return NextResponse.json({ error: 'Avaliação não encontrada' }, { status: 404 })
 
-  // Check attempt limit
-  const tentativas = await prisma.tentativa.findMany({
-    where: { userId: session.user.id, avaliacaoId: id, finalizadaEm: { not: null } },
-  })
-  if (tentativas.length >= av.maxTentativas) {
-    return NextResponse.json({ error: 'Limite de tentativas atingido' }, { status: 403 })
+  // Check attempt limit (admins bypass for testing)
+  if (!isAdmin) {
+    const tentativas = await prisma.tentativa.findMany({
+      where: { userId: session.user.id, avaliacaoId: id, finalizadaEm: { not: null } },
+    })
+    if (tentativas.length >= av.maxTentativas) {
+      return NextResponse.json({ error: 'Limite de tentativas atingido' }, { status: 403 })
+    }
   }
 
   // Check for open (unfinished) attempt

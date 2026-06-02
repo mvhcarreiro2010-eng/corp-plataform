@@ -2,16 +2,20 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { ClipboardList, Plus, Trash2, BookOpen, Eye, EyeOff, Download } from 'lucide-react'
+import { ClipboardList, Plus, Trash2, BookOpen, Eye, EyeOff, Download, Play, Settings2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { TagInput } from '@/components/ui/TagInput'
+import { VisibilityConfig, VisibilityValue } from '@/components/admin/VisibilityConfig'
 
 interface Avaliacao {
   id: string; title: string; description: string | null; questoesExibir: number
   maxTentativas: number; published: boolean; createdAt: string
+  buIds: string[]; roleFilter: string[]; userIds: string[]
   _count: { questoes: number }
 }
+
+const EMPTY_VIS: VisibilityValue = { buIds: [], roleFilter: [], userIds: [] }
 
 export default function AdminAvaliacoesPage() {
   const [items, setItems] = useState<Avaliacao[]>([])
@@ -19,10 +23,13 @@ export default function AdminAvaliacoesPage() {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ title: '', description: '', questoesExibir: 10, tempoPorQuestao: '', tempoTotal: '', maxTentativas: 1 })
   const [formTags, setFormTags] = useState<string[]>([])
+  const [formVis, setFormVis] = useState<VisibilityValue>(EMPTY_VIS)
   const [saving, setSaving] = useState(false)
+  const [editingVis, setEditingVis] = useState<string | null>(null)
+  const [editVisValue, setEditVisValue] = useState<VisibilityValue>(EMPTY_VIS)
+  const [savingVis, setSavingVis] = useState(false)
 
   const load = async () => {
-    // Admin sees all - use admin bypass
     const res = await fetch('/api/avaliacoes')
     setItems(await res.json())
     setLoading(false)
@@ -39,6 +46,7 @@ export default function AdminAvaliacoesPage() {
       body: JSON.stringify({
         ...form,
         tags: formTags,
+        ...formVis,
         tempoPorQuestao: form.tempoPorQuestao ? Number(form.tempoPorQuestao) : null,
         tempoTotal: form.tempoTotal ? Number(form.tempoTotal) : null,
       }),
@@ -47,6 +55,7 @@ export default function AdminAvaliacoesPage() {
     setShowForm(false)
     setForm({ title: '', description: '', questoesExibir: 10, tempoPorQuestao: '', tempoTotal: '', maxTentativas: 1 })
     setFormTags([])
+    setFormVis(EMPTY_VIS)
     load()
   }
 
@@ -56,6 +65,23 @@ export default function AdminAvaliacoesPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...av, published: !av.published }),
     })
+    load()
+  }
+
+  const openVisEdit = (av: Avaliacao) => {
+    setEditingVis(av.id)
+    setEditVisValue({ buIds: av.buIds ?? [], roleFilter: av.roleFilter ?? [], userIds: av.userIds ?? [] })
+  }
+
+  const saveVis = async (av: Avaliacao) => {
+    setSavingVis(true)
+    await fetch(`/api/avaliacoes/${av.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...av, ...editVisValue }),
+    })
+    setSavingVis(false)
+    setEditingVis(null)
     load()
   }
 
@@ -82,8 +108,8 @@ export default function AdminAvaliacoesPage() {
       </div>
 
       {showForm && (
-        <div className="bg-white border border-gray-200 rounded-xl p-5 mb-6 shadow-sm">
-          <h2 className="text-sm font-semibold text-gray-700 mb-4">Nova Avaliação</h2>
+        <div className="bg-white border border-gray-200 rounded-xl p-5 mb-6 shadow-sm space-y-4">
+          <h2 className="text-sm font-semibold text-gray-700">Nova Avaliação</h2>
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2">
               <label className="text-xs font-medium text-gray-600 mb-1 block">Título *</label>
@@ -102,21 +128,22 @@ export default function AdminAvaliacoesPage() {
               <Input type="number" min={1} value={form.maxTentativas} onChange={e => setForm(f => ({ ...f, maxTentativas: Number(e.target.value) }))} />
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-600 mb-1 block">Tempo por questão (seg, vazio = sem limite)</label>
-              <Input type="number" min={0} value={form.tempoPorQuestao} onChange={e => setForm(f => ({ ...f, tempoPorQuestao: e.target.value }))} placeholder="Ex: 60" />
+              <label className="text-xs font-medium text-gray-600 mb-1 block">Tempo por questão (seg)</label>
+              <Input type="number" min={0} value={form.tempoPorQuestao} onChange={e => setForm(f => ({ ...f, tempoPorQuestao: e.target.value }))} placeholder="Vazio = sem limite" />
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-600 mb-1 block">Tempo total (seg, vazio = sem limite)</label>
-              <Input type="number" min={0} value={form.tempoTotal} onChange={e => setForm(f => ({ ...f, tempoTotal: e.target.value }))} placeholder="Ex: 1800" />
+              <label className="text-xs font-medium text-gray-600 mb-1 block">Tempo total (seg)</label>
+              <Input type="number" min={0} value={form.tempoTotal} onChange={e => setForm(f => ({ ...f, tempoTotal: e.target.value }))} placeholder="Vazio = sem limite" />
             </div>
           </div>
-          <div className="col-span-2 mt-1">
+          <div>
             <label className="text-xs font-medium text-gray-600 mb-1 block">Tags</label>
             <TagInput tags={formTags} onChange={setFormTags} />
             <p className="text-xs text-gray-400 mt-1">Pressione Enter ou vírgula para adicionar.</p>
           </div>
-          <div className="flex gap-2 justify-end mt-4">
-            <Button variant="ghost" size="sm" onClick={() => setShowForm(false)}>Cancelar</Button>
+          <VisibilityConfig value={formVis} onChange={setFormVis} />
+          <div className="flex gap-2 justify-end">
+            <Button variant="ghost" size="sm" onClick={() => { setShowForm(false); setFormVis(EMPTY_VIS) }}>Cancelar</Button>
             <Button size="sm" onClick={save} disabled={saving || !form.title.trim()}>{saving ? 'Salvando...' : 'Criar'}</Button>
           </div>
         </div>
@@ -132,34 +159,61 @@ export default function AdminAvaliacoesPage() {
       ) : (
         <div className="space-y-3">
           {items.map(av => (
-            <div key={av.id} className="bg-white border border-gray-200 rounded-xl px-4 py-4 flex items-center justify-between gap-4">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="font-medium text-gray-900">{av.title}</span>
-                  {av.published
-                    ? <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Publicada</span>
-                    : <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">Rascunho</span>
-                  }
+            <div key={av.id} className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+              <div className="px-4 py-4 flex items-center justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-medium text-gray-900">{av.title}</span>
+                    {av.published
+                      ? <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Publicada</span>
+                      : <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">Rascunho</span>
+                    }
+                    {(av.buIds?.length > 0 || av.roleFilter?.length > 0 || av.userIds?.length > 0) && (
+                      <span className="text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full">Restrita</span>
+                    )}
+                  </div>
+                  <div className="text-xs text-gray-400 flex gap-3">
+                    <span><BookOpen className="w-3 h-3 inline mr-1" />{av._count.questoes} questões no banco</span>
+                    <span>Exibe {av.questoesExibir} por tentativa</span>
+                    <span>Máx {av.maxTentativas} tentativa(s)</span>
+                  </div>
                 </div>
-                <div className="text-xs text-gray-400 flex gap-3">
-                  <span><BookOpen className="w-3 h-3 inline mr-1" />{av._count.questoes} questões no banco</span>
-                  <span>Exibe {av.questoesExibir} por tentativa</span>
-                  <span>Máx {av.maxTentativas} tentativa(s)</span>
-                </div>
-              </div>
-              <div className="flex gap-1 shrink-0">
-                <Link href={`/admin/avaliacoes/${av.id}/questoes`}>
-                  <button className="p-1.5 rounded hover:bg-gray-100 text-gray-500" title="Banco de questões">
-                    <BookOpen className="w-4 h-4" />
+                <div className="flex gap-1 shrink-0">
+                  <Link href={`/admin/avaliacoes/${av.id}/questoes`}>
+                    <button className="p-1.5 rounded hover:bg-gray-100 text-gray-500" title="Banco de questões">
+                      <BookOpen className="w-4 h-4" />
+                    </button>
+                  </Link>
+                  <Link href={`/avaliacoes/${av.id}`} target="_blank">
+                    <button className="p-1.5 rounded hover:bg-blue-50 text-blue-400" title="Testar avaliação">
+                      <Play className="w-4 h-4" />
+                    </button>
+                  </Link>
+                  <button onClick={() => editingVis === av.id ? setEditingVis(null) : openVisEdit(av)}
+                    className={`p-1.5 rounded text-gray-500 ${editingVis === av.id ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100'}`}
+                    title="Visibilidade">
+                    <Settings2 className="w-4 h-4" />
                   </button>
-                </Link>
-                <button onClick={() => togglePublish(av)} className="p-1.5 rounded hover:bg-gray-100 text-gray-500" title={av.published ? 'Despublicar' : 'Publicar'}>
-                  {av.published ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-                <button onClick={() => remove(av.id, av.title)} className="p-1.5 rounded hover:bg-red-50 text-red-400">
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                  <button onClick={() => togglePublish(av)} className="p-1.5 rounded hover:bg-gray-100 text-gray-500" title={av.published ? 'Despublicar' : 'Publicar'}>
+                    {av.published ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                  <button onClick={() => remove(av.id, av.title)} className="p-1.5 rounded hover:bg-red-50 text-red-400">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
+
+              {editingVis === av.id && (
+                <div className="border-t border-gray-100 p-4 space-y-3 bg-gray-50">
+                  <VisibilityConfig value={editVisValue} onChange={setEditVisValue} />
+                  <div className="flex justify-end gap-2">
+                    <Button variant="ghost" size="sm" onClick={() => setEditingVis(null)}>Cancelar</Button>
+                    <Button size="sm" onClick={() => saveVis(av)} disabled={savingVis}>
+                      {savingVis ? 'Salvando...' : 'Salvar visibilidade'}
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>

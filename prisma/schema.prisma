@@ -125,6 +125,7 @@ model Post {
   pinned     Boolean    @default(false)
   buIds      String[]   @default([])
   roleFilter String[]   @default([])
+  userIds    String[]   @default([])
   authorId   String
   author     User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
   comments   Comment[]
@@ -204,6 +205,7 @@ model WikiPage {
   tags       String[]       @default([])
   buIds      String[]       @default([])
   roleFilter String[]       @default([])
+  userIds    String[]       @default([])
   updatedAt  DateTime       @updatedAt
   createdAt  DateTime       @default(now())
   pageViews  WikiPageView[]
@@ -273,6 +275,7 @@ model Course {
   tags        String[]   @default([])
   buIds       String[]   @default([])
   roleFilter  String[]   @default([])
+  userIds     String[]   @default([])
   modules     Module[]
   progress    Progress[]
   createdAt   DateTime   @default(now())
@@ -384,6 +387,7 @@ model InductionTrail {
   published   Boolean         @default(false)
   buIds       String[]        @default([])
   roleFilter  String[]        @default([])
+  userIds     String[]        @default([])
   steps       InductionStep[]
   createdAt   DateTime        @default(now())
 
@@ -502,6 +506,7 @@ model Avaliacao {
   tags            String[]    @default([])
   buIds           String[]    @default([])
   roleFilter      String[]    @default([])
+  userIds         String[]    @default([])
   questoes        Questao[]
   tentativas      Tentativa[]
   createdAt       DateTime    @default(now())

@@ -7,6 +7,7 @@ import { ArrowLeft, Save, Loader2, Image, Video, Link, X, Pin } from 'lucide-rea
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import RichEditor from '@/components/editor/RichEditor'
+import { VisibilityConfig, VisibilityValue } from '@/components/admin/VisibilityConfig'
 import NextLink from 'next/link'
 
 interface PostEditorProps {
@@ -26,6 +27,7 @@ export default function PostEditor({ mode, postId }: PostEditorProps) {
   const [pinned, setPinned] = useState(false)
   const [youtubeUrl, setYoutubeUrl] = useState('')
   const [showYoutubeInput, setShowYoutubeInput] = useState(false)
+  const [vis, setVis] = useState<VisibilityValue>({ buIds: [], roleFilter: [], userIds: [] })
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [loading, setLoading] = useState(mode === 'edit')
@@ -43,6 +45,7 @@ export default function PostEditor({ mode, postId }: PostEditorProps) {
           setMediaUrl(post.mediaUrl ?? '')
           setMediaType(post.mediaType ?? null)
           setPinned(post.pinned)
+          setVis({ buIds: post.buIds ?? [], roleFilter: post.roleFilter ?? [], userIds: post.userIds ?? [] })
         }
         setLoading(false)
       })
@@ -88,7 +91,7 @@ export default function PostEditor({ mode, postId }: PostEditorProps) {
     if (!content.trim()) { setError('O conteúdo do post é obrigatório.'); return }
     setSaving(true); setError('')
     try {
-      const body = { content, mediaUrl: mediaUrl || null, mediaType: mediaType || null, pinned }
+      const body = { content, mediaUrl: mediaUrl || null, mediaType: mediaType || null, pinned, ...vis }
       const res = mode === 'create'
         ? await fetch('/api/posts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
         : await fetch(`/api/posts/${postId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
@@ -134,6 +137,9 @@ export default function PostEditor({ mode, postId }: PostEditorProps) {
 
       {/* Editor de conteúdo */}
       <RichEditor content={content} onChange={setContent} placeholder="Escreva o comunicado, notícia ou anúncio..." minHeight={300} />
+
+      {/* Visibilidade */}
+      <VisibilityConfig value={vis} onChange={setVis} />
 
       {/* Mídia */}
       <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">

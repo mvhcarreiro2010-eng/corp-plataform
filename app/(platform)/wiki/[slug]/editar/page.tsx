@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { TagInput } from '@/components/ui/TagInput'
 import RichEditor from '@/components/editor/RichEditor'
+import { VisibilityConfig, VisibilityValue } from '@/components/admin/VisibilityConfig'
 import Link from 'next/link'
 
 type Category = { id: string; name: string; icon: string | null }
@@ -21,6 +22,7 @@ export default function WikiEditarPage() {
   const [categoryId, setCategoryId] = useState('')
   const [categories, setCategories] = useState<Category[]>([])
   const [tags, setTags] = useState<string[]>([])
+  const [vis, setVis] = useState<VisibilityValue>({ buIds: [], roleFilter: [], userIds: [] })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -38,6 +40,7 @@ export default function WikiEditarPage() {
       setContent(page.content ?? '')
       setCategoryId(page.categoryId ?? '')
       setTags(page.tags ?? [])
+      setVis({ buIds: page.buIds ?? [], roleFilter: page.roleFilter ?? [], userIds: page.userIds ?? [] })
       setCategories(cats)
       setLoading(false)
     })
@@ -59,7 +62,7 @@ export default function WikiEditarPage() {
       const res = await fetch(`/api/wiki/${slug}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, content, categoryId, tags }),
+        body: JSON.stringify({ title, content, categoryId, tags, ...vis }),
       })
       if (!res.ok) { const d = await res.json(); setError(d.error ?? 'Erro ao salvar'); return }
       const updated = await res.json()
@@ -124,6 +127,8 @@ export default function WikiEditarPage() {
           <TagInput tags={tags} onChange={setTags} />
           <p className="text-xs text-gray-400 mt-1">Pressione Enter ou vírgula para adicionar. Usado na busca.</p>
         </div>
+
+        <VisibilityConfig value={vis} onChange={setVis} />
 
         <RichEditor key={content.length > 0 ? 'loaded' : 'empty'} content={content} onChange={setContent} placeholder="Escreva o conteúdo do artigo..." minHeight={400} />
       </div>

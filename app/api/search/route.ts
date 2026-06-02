@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { buildSegFilter } from '@/lib/segmentation'
 
 export async function GET(req: NextRequest) {
   const session = await auth()
@@ -10,15 +11,8 @@ export async function GET(req: NextRequest) {
   if (q.length < 2) return NextResponse.json({ wiki: [], courses: [], avaliacoes: [], tagSuggestions: [] })
 
   const isAdmin = ['ADMIN', 'HR'].includes(session.user.role)
-  const userBuId = session.user.buId
-  const userRole = session.user.role
 
-  const seg = isAdmin ? {} : {
-    AND: [
-      { OR: [{ buIds: { isEmpty: true } }, ...(userBuId ? [{ buIds: { has: userBuId } }] : [])] },
-      { OR: [{ roleFilter: { isEmpty: true } }, { roleFilter: { has: userRole } }] },
-    ],
-  }
+  const seg = isAdmin ? {} : buildSegFilter(session.user)
 
   const textOr = [
     { title: { contains: q, mode: 'insensitive' as const } },

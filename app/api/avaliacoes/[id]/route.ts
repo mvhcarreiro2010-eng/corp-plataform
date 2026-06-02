@@ -33,8 +33,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       tempoTotal: body.tempoTotal || null,
       maxTentativas: body.maxTentativas,
       published: body.published,
-      buIds: body.buIds,
-      roleFilter: body.roleFilter,
+      buIds: body.buIds ?? [],
+      roleFilter: body.roleFilter ?? [],
+      userIds: body.userIds ?? [],
     },
   })
 

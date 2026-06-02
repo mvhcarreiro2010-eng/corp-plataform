@@ -9,6 +9,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import RichEditor from '@/components/editor/RichEditor'
+import { VisibilityConfig, VisibilityValue } from '@/components/admin/VisibilityConfig'
 
 type InductionQuiz = { id: string; question: string; options: string[]; answer: number }
 type InductionStep = {
@@ -18,6 +19,7 @@ type InductionStep = {
 }
 type InductionTrail = {
   id: string; title: string; description: string | null; published: boolean
+  buIds: string[]; roleFilter: string[]; userIds: string[]
   steps: InductionStep[]
 }
 
@@ -268,6 +270,9 @@ export default function AdminInducaoPage() {
   const [newStepDias, setNewStepDias] = useState('')
   const [newStepUrl, setNewStepUrl] = useState('')
 
+  const [showVis, setShowVis] = useState(false)
+  const [visValue, setVisValue] = useState<VisibilityValue>({ buIds: [], roleFilter: [], userIds: [] })
+  const [savingVis, setSavingVis] = useState(false)
   const isAdmin = ['ADMIN', 'HR'].includes(session?.user?.role ?? '')
 
   useEffect(() => {
@@ -306,6 +311,26 @@ export default function AdminInducaoPage() {
     const updated = { ...selectedTrail, published: trail.published }
     setSelectedTrail(updated)
     setTrails(prev => prev.map(t => t.id === updated.id ? { ...t, published: trail.published } : t))
+  }
+
+  const openVisibility = () => {
+    if (!selectedTrail) return
+    setVisValue({ buIds: selectedTrail.buIds ?? [], roleFilter: selectedTrail.roleFilter ?? [], userIds: selectedTrail.userIds ?? [] })
+    setShowVis(true)
+  }
+
+  const saveVisibility = async () => {
+    if (!selectedTrail) return
+    setSavingVis(true)
+    await fetch('/api/induction/admin', {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ entity: 'trail', id: selectedTrail.id, title: selectedTrail.title, description: selectedTrail.description, published: selectedTrail.published, ...visValue }),
+    })
+    const updated = { ...selectedTrail, ...visValue }
+    setSelectedTrail(updated)
+    setTrails(prev => prev.map(t => t.id === updated.id ? { ...t, ...visValue } : t))
+    setSavingVis(false)
+    setShowVis(false)
   }
 
   const addStep = async () => {
@@ -398,15 +423,31 @@ export default function AdminInducaoPage() {
       {selectedTrail && (
         <div className="space-y-4">
           {/* Trail header */}
-          <div className="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-4">
-            <div className="flex-1">
-              <p className="font-semibold text-gray-900">{selectedTrail.title}</p>
-              {selectedTrail.description && <p className="text-sm text-gray-500">{selectedTrail.description}</p>}
-              <p className="text-xs text-gray-400 mt-1">{selectedTrail.steps.length} etapas</p>
+          <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
+            <div className="flex items-center gap-4">
+              <div className="flex-1">
+                <p className="font-semibold text-gray-900">{selectedTrail.title}</p>
+                {selectedTrail.description && <p className="text-sm text-gray-500">{selectedTrail.description}</p>}
+                <p className="text-xs text-gray-400 mt-1">{selectedTrail.steps.length} etapas</p>
+              </div>
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" onClick={openVisibility}>Visibilidade</Button>
+                <Button size="sm" variant={selectedTrail.published ? 'outline' : 'default'} onClick={togglePublish}>
+                  {selectedTrail.published ? <><EyeOff className="w-4 h-4" /> Despublicar</> : <><Eye className="w-4 h-4" /> Publicar</>}
+                </Button>
+              </div>
             </div>
-            <Button size="sm" variant={selectedTrail.published ? 'outline' : 'default'} onClick={togglePublish}>
-              {selectedTrail.published ? <><EyeOff className="w-4 h-4" /> Despublicar</> : <><Eye className="w-4 h-4" /> Publicar</>}
-            </Button>
+            {showVis && (
+              <div className="space-y-3 pt-2 border-t border-gray-100">
+                <VisibilityConfig value={visValue} onChange={setVisValue} />
+                <div className="flex justify-end gap-2">
+                  <Button size="sm" variant="ghost" onClick={() => setShowVis(false)}>Cancelar</Button>
+                  <Button size="sm" onClick={saveVisibility} disabled={savingVis}>
+                    {savingVis ? 'Salvando...' : 'Salvar visibilidade'}
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Steps */}

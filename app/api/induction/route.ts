@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { buildSegFilter } from '@/lib/segmentation'
 
 // GET /api/induction — Trilha de indução + treinamentos convocados
 export async function GET() {
@@ -8,15 +9,10 @@ export async function GET() {
   if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
 
   const isAdmin = ['ADMIN', 'HR'].includes(session.user.role)
-  const userBuId = session.user.buId
-  const userRole = session.user.role
 
   const trailFilter = isAdmin ? { published: true } : {
     published: true,
-    AND: [
-      { OR: [{ buIds: { isEmpty: true } }, ...(userBuId ? [{ buIds: { has: userBuId } }] : [])] },
-      { OR: [{ roleFilter: { isEmpty: true } }, { roleFilter: { has: userRole } }] },
-    ],
+    ...buildSegFilter(session.user),
   }
 
   // Get user's admission date and turmas for milestone calculations

@@ -18,6 +18,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       mediaUrl: body.mediaUrl ?? null,
       mediaType: body.mediaType ?? null,
       pinned: body.pinned ?? false,
+      ...(body.buIds !== undefined && { buIds: body.buIds }),
+      ...(body.roleFilter !== undefined && { roleFilter: body.roleFilter }),
+      ...(body.userIds !== undefined && { userIds: body.userIds }),
     },
     include: {
       author: { select: { id: true, name: true, avatar: true, jobTitle: true, role: true } },

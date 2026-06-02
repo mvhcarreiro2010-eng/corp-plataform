@@ -93,7 +93,16 @@ export async function PUT(req: NextRequest) {
   if (body.entity === 'course') {
     const course = await prisma.course.update({
       where: { id: body.id },
-      data: { title: body.title, description: body.description, thumbnail: body.thumbnail, xpReward: body.xpReward, published: body.published },
+      data: {
+        title: body.title,
+        description: body.description,
+        thumbnail: body.thumbnail,
+        xpReward: body.xpReward,
+        published: body.published,
+        ...(body.buIds !== undefined && { buIds: body.buIds }),
+        ...(body.roleFilter !== undefined && { roleFilter: body.roleFilter }),
+        ...(body.userIds !== undefined && { userIds: body.userIds }),
+      },
     })
     return NextResponse.json(course)
   }

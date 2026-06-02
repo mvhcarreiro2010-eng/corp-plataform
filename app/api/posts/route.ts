@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { buildSegFilter } from '@/lib/segmentation'
 
 // GET /api/posts — Lista posts do feed
 export async function GET(req: NextRequest) {
@@ -12,15 +13,8 @@ export async function GET(req: NextRequest) {
   const limit = 10
 
   const isAdmin = ['ADMIN', 'HR'].includes(session.user.role)
-  const userBuId = session.user.buId
-  const userRole = session.user.role
 
-  const segFilter = isAdmin ? {} : {
-    AND: [
-      { OR: [{ buIds: { isEmpty: true } }, ...(userBuId ? [{ buIds: { has: userBuId } }] : [])] },
-      { OR: [{ roleFilter: { isEmpty: true } }, { roleFilter: { has: userRole } }] },
-    ],
-  }
+  const segFilter = isAdmin ? {} : buildSegFilter(session.user)
 
   const posts = await prisma.post.findMany({
     take: limit + 1,
@@ -51,7 +45,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Sem permissão' }, { status: 403 })
   }
 
-  const { content, mediaUrl, mediaType, pinned, buIds, roleFilter } = await req.json()
+  const { content, mediaUrl, mediaType, pinned, buIds, roleFilter, userIds } = await req.json()
   if (!content?.trim()) return NextResponse.json({ error: 'Conteúdo obrigatório' }, { status: 400 })
 
   const post = await prisma.post.create({
@@ -62,6 +56,7 @@ export async function POST(req: NextRequest) {
       pinned: pinned ?? false,
       buIds: buIds ?? [],
       roleFilter: roleFilter ?? [],
+      userIds: userIds ?? [],
       authorId: session.user.id,
     },
     include: {

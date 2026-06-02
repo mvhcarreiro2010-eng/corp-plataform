@@ -1,21 +1,17 @@
 import { auth } from '@/lib/auth'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { buildSegFilter } from '@/lib/segmentation'
 
 export async function GET(req: NextRequest) {
   const session = await auth()
   if (!session?.user) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
 
   const isAdmin = ['ADMIN', 'HR'].includes(session.user.role)
-  const userBuId = session.user.buId
-  const userRole = session.user.role
 
-  const segFilter = isAdmin ? {} : {
+  const segFilter = {
     published: true,
-    AND: [
-      { OR: [{ buIds: { isEmpty: true } }, ...(userBuId ? [{ buIds: { has: userBuId } }] : [])] },
-      { OR: [{ roleFilter: { isEmpty: true } }, { roleFilter: { has: userRole } }] },
-    ],
+    ...(isAdmin ? {} : buildSegFilter(session.user)),
   }
 
   const avaliacoes = await prisma.avaliacao.findMany({
@@ -36,7 +32,7 @@ export async function POST(req: NextRequest) {
   if (!['ADMIN', 'HR'].includes(session.user.role)) return NextResponse.json({ error: 'Sem permissão' }, { status: 403 })
 
   const body = await req.json()
-  const { title, description, questoesExibir, tempoPorQuestao, tempoTotal, maxTentativas, buIds, roleFilter, tags } = body
+  const { title, description, questoesExibir, tempoPorQuestao, tempoTotal, maxTentativas, buIds, roleFilter, userIds, tags } = body
 
   if (!title?.trim()) return NextResponse.json({ error: 'Título obrigatório' }, { status: 400 })
 
@@ -50,6 +46,7 @@ export async function POST(req: NextRequest) {
       maxTentativas: maxTentativas ?? 1,
       buIds: buIds ?? [],
       roleFilter: roleFilter ?? [],
+      userIds: userIds ?? [],
       tags: tags ?? [],
     },
   })

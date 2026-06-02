@@ -9,6 +9,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import RichEditor from '@/components/editor/RichEditor'
+import { VisibilityConfig, VisibilityValue } from '@/components/admin/VisibilityConfig'
 
 type Quiz = { id: string; question: string; options: string[]; answer: number }
 type Lesson = {
@@ -19,6 +20,7 @@ type Module = { id: string; title: string; order: number; lessons: Lesson[] }
 type Course = {
   id: string; title: string; description: string; thumbnail: string | null
   xpReward: number; published: boolean; modules: Module[]
+  buIds: string[]; roleFilter: string[]; userIds: string[]
   _count: { progress: number }
 }
 
@@ -250,6 +252,9 @@ export default function AdminCursosPage() {
   const [newLessonTitle, setNewLessonTitle] = useState('')
   const [newLessonType, setNewLessonType] = useState('TEXT')
   const [uploadingThumb, setUploadingThumb] = useState(false)
+  const [showVis, setShowVis] = useState(false)
+  const [visValue, setVisValue] = useState<VisibilityValue>({ buIds: [], roleFilter: [], userIds: [] })
+  const [savingVis, setSavingVis] = useState(false)
   const thumbRef = useRef<HTMLInputElement>(null)
   const isAdmin = ['ADMIN', 'HR'].includes(session?.user?.role ?? '')
 
@@ -298,6 +303,26 @@ export default function AdminCursosPage() {
     const updated = await res.json()
     setSelected({ ...selected, published: updated.published })
     setCourses(prev => prev.map(c => c.id === selected.id ? { ...c, published: updated.published } : c))
+  }
+
+  const openVisibility = () => {
+    if (!selected) return
+    setVisValue({ buIds: selected.buIds ?? [], roleFilter: selected.roleFilter ?? [], userIds: selected.userIds ?? [] })
+    setShowVis(true)
+  }
+
+  const saveVisibility = async () => {
+    if (!selected) return
+    setSavingVis(true)
+    await fetch('/api/courses/admin', {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ entity: 'course', id: selected.id, title: selected.title, description: selected.description, thumbnail: selected.thumbnail, xpReward: selected.xpReward, published: selected.published, ...visValue }),
+    })
+    const updated = { ...selected, ...visValue }
+    setSelected(updated)
+    setCourses(prev => prev.map(c => c.id === selected.id ? { ...c, ...visValue } : c))
+    setSavingVis(false)
+    setShowVis(false)
   }
 
   const addModule = async () => {
@@ -416,30 +441,48 @@ export default function AdminCursosPage() {
       {selected && (
         <div className="space-y-4">
           {/* Course header */}
-          <div className="bg-white rounded-xl border border-gray-200 p-4 flex gap-4">
-            <div className="flex-shrink-0">
-              {selected.thumbnail ? (
-                <img src={selected.thumbnail} alt="" className="w-24 h-16 object-cover rounded-lg" />
-              ) : (
-                <div className="w-24 h-16 bg-gray-100 rounded-lg flex items-center justify-center text-2xl">🎓</div>
-              )}
-              <button onClick={() => thumbRef.current?.click()}
-                disabled={uploadingThumb}
-                className="mt-1 w-24 text-xs text-center text-blue-600 hover:underline flex items-center justify-center gap-1">
-                {uploadingThumb ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
-                Alterar capa
-              </button>
-              <input ref={thumbRef} type="file" accept="image/*" className="hidden"
-                onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadThumb(f); e.target.value = '' }} />
+          <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
+            <div className="flex gap-4">
+              <div className="flex-shrink-0">
+                {selected.thumbnail ? (
+                  <img src={selected.thumbnail} alt="" className="w-24 h-16 object-cover rounded-lg" />
+                ) : (
+                  <div className="w-24 h-16 bg-gray-100 rounded-lg flex items-center justify-center text-2xl">🎓</div>
+                )}
+                <button onClick={() => thumbRef.current?.click()}
+                  disabled={uploadingThumb}
+                  className="mt-1 w-24 text-xs text-center text-blue-600 hover:underline flex items-center justify-center gap-1">
+                  {uploadingThumb ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
+                  Alterar capa
+                </button>
+                <input ref={thumbRef} type="file" accept="image/*" className="hidden"
+                  onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadThumb(f); e.target.value = '' }} />
+              </div>
+              <div className="flex-1">
+                <p className="font-semibold text-gray-900">{selected.title}</p>
+                <p className="text-sm text-gray-500 mt-0.5">{selected.description}</p>
+                <p className="text-xs text-gray-400 mt-1">{selected.modules.length} módulos · {selected._count.progress} matrículas</p>
+              </div>
+              <div className="flex flex-col gap-2">
+                <Button size="sm" variant={selected.published ? 'outline' : 'default'} onClick={togglePublish}>
+                  {selected.published ? <><EyeOff className="w-4 h-4" /> Despublicar</> : <><Eye className="w-4 h-4" /> Publicar</>}
+                </Button>
+                <Button size="sm" variant="outline" onClick={openVisibility}>
+                  Visibilidade
+                </Button>
+              </div>
             </div>
-            <div className="flex-1">
-              <p className="font-semibold text-gray-900">{selected.title}</p>
-              <p className="text-sm text-gray-500 mt-0.5">{selected.description}</p>
-              <p className="text-xs text-gray-400 mt-1">{selected.modules.length} módulos · {selected._count.progress} matrículas</p>
-            </div>
-            <Button size="sm" variant={selected.published ? 'outline' : 'default'} onClick={togglePublish}>
-              {selected.published ? <><EyeOff className="w-4 h-4" /> Despublicar</> : <><Eye className="w-4 h-4" /> Publicar</>}
-            </Button>
+            {showVis && (
+              <div className="space-y-3 pt-2 border-t border-gray-100">
+                <VisibilityConfig value={visValue} onChange={setVisValue} />
+                <div className="flex justify-end gap-2">
+                  <Button size="sm" variant="ghost" onClick={() => setShowVis(false)}>Cancelar</Button>
+                  <Button size="sm" onClick={saveVisibility} disabled={savingVis}>
+                    {savingVis ? 'Salvando...' : 'Salvar visibilidade'}
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Modules */}

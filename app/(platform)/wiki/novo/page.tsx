@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { TagInput } from '@/components/ui/TagInput'
 import RichEditor from '@/components/editor/RichEditor'
+import { VisibilityConfig, VisibilityValue } from '@/components/admin/VisibilityConfig'
 import Link from 'next/link'
 
 type Category = { id: string; name: string; icon: string | null }
@@ -20,6 +21,7 @@ export default function WikiNovoPage() {
   const [categoryId, setCategoryId] = useState('')
   const [categories, setCategories] = useState<Category[]>([])
   const [tags, setTags] = useState<string[]>([])
+  const [vis, setVis] = useState<VisibilityValue>({ buIds: [], roleFilter: [], userIds: [] })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
@@ -49,7 +51,7 @@ export default function WikiNovoPage() {
       const res = await fetch('/api/wiki', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'page', title, content, categoryId, tags }),
+        body: JSON.stringify({ type: 'page', title, content, categoryId, tags, ...vis }),
       })
       if (!res.ok) { const d = await res.json(); setError(d.error ?? 'Erro ao salvar'); return }
       const page = await res.json()
@@ -98,6 +100,8 @@ export default function WikiNovoPage() {
           <TagInput tags={tags} onChange={setTags} />
           <p className="text-xs text-gray-400 mt-1">Pressione Enter ou vírgula para adicionar. Usado na busca.</p>
         </div>
+
+        <VisibilityConfig value={vis} onChange={setVis} />
 
         <RichEditor
           content={content}

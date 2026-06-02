@@ -50,6 +50,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ slug
       categoryId: body.categoryId,
       published: body.published ?? page.published,
       tags: body.tags ?? page.tags,
+      buIds: body.buIds ?? page.buIds,
+      roleFilter: body.roleFilter ?? page.roleFilter,
+      userIds: body.userIds ?? page.userIds,
     },
   })
 
