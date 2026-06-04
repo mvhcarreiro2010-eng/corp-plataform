@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Clock, Eye, ChevronRight, Loader2, Pencil } from 'lucide-react'
+import { ArrowLeft, Clock, Eye, ChevronRight, Loader2, Pencil, FileText, ExternalLink, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { timeAgo } from '@/lib/utils'
 import { useSession } from 'next-auth/react'
@@ -11,6 +11,8 @@ type WikiArticle = {
   id: string
   title: string
   content: string
+  pdfUrl: string | null
+  pdfName: string | null
   views: number
   updatedAt: Date
   category: { id: string; name: string; icon: string | null; color: string | null }
@@ -107,6 +109,56 @@ export default function WikiArticlePage() {
             className="prose prose-sm max-w-none"
             dangerouslySetInnerHTML={{ __html: article.content }}
           />
+
+          {/* PDF Viewer */}
+          {article.pdfUrl && (
+            <div className="mt-8 border-t border-gray-100 pt-6 space-y-3">
+              <div className="flex items-center justify-between gap-3 bg-red-50 border border-red-100 rounded-xl px-4 py-3">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <FileText className="w-5 h-5 text-red-500 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-gray-800 truncate">{article.pdfName ?? 'documento.pdf'}</p>
+                    <p className="text-xs text-gray-500">Documento PDF</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <a
+                    href={article.pdfUrl}
+                    download={article.pdfName ?? 'documento.pdf'}
+                    className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700 px-2.5 py-1.5 border border-gray-200 rounded-lg bg-white hover:bg-gray-50 transition-colors"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    Baixar
+                  </a>
+                  <a
+                    href={article.pdfUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 text-xs text-red-600 hover:text-red-700 px-2.5 py-1.5 border border-red-200 rounded-lg bg-white hover:bg-red-50 transition-colors"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    Abrir
+                  </a>
+                </div>
+              </div>
+
+              {/* Iframe viewer — desktop only, collapsible on mobile */}
+              <details className="group" open>
+                <summary className="text-xs text-gray-400 cursor-pointer hover:text-gray-600 select-none list-none flex items-center gap-1">
+                  <span className="group-open:hidden">▶ Visualizar PDF</span>
+                  <span className="hidden group-open:inline">▼ Ocultar visualizador</span>
+                </summary>
+                <div className="mt-2 rounded-xl overflow-hidden border border-gray-200 bg-gray-50">
+                  <iframe
+                    src={`${article.pdfUrl}#toolbar=1&navpanes=0`}
+                    className="w-full"
+                    style={{ height: '70vh', minHeight: 480 }}
+                    title={article.pdfName ?? 'PDF'}
+                  />
+                </div>
+              </details>
+            </div>
+          )}
         </div>
       </div>
 

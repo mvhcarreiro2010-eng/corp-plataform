@@ -53,6 +53,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ slug
       buIds: body.buIds ?? page.buIds,
       roleFilter: body.roleFilter ?? page.roleFilter,
       userIds: body.userIds ?? page.userIds,
+      pdfUrl: body.pdfUrl !== undefined ? (body.pdfUrl || null) : page.pdfUrl,
+      pdfName: body.pdfName !== undefined ? (body.pdfName || null) : page.pdfName,
     },
   })
 

@@ -99,6 +99,8 @@ export async function POST(req: NextRequest) {
       buIds: body.buIds ?? [],
       roleFilter: body.roleFilter ?? [],
       userIds: body.userIds ?? [],
+      pdfUrl: body.pdfUrl || null,
+      pdfName: body.pdfName || null,
     },
   })
 

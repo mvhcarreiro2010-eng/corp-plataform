@@ -197,6 +197,8 @@ model WikiPage {
   slug       String         @unique
   content    String         @db.Text
   excerpt    String?
+  pdfUrl     String?
+  pdfName    String?
   categoryId String
   category   WikiCategory   @relation(fields: [categoryId], references: [id])
   authorId   String

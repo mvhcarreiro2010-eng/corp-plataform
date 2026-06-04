@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { TagInput } from '@/components/ui/TagInput'
 import RichEditor from '@/components/editor/RichEditor'
 import { VisibilityConfig, VisibilityValue } from '@/components/admin/VisibilityConfig'
+import { PdfUpload } from '@/components/wiki/PdfUpload'
 import Link from 'next/link'
 
 type Category = { id: string; name: string; icon: string | null }
@@ -23,6 +24,8 @@ export default function WikiEditarPage() {
   const [categories, setCategories] = useState<Category[]>([])
   const [tags, setTags] = useState<string[]>([])
   const [vis, setVis] = useState<VisibilityValue>({ buIds: [], roleFilter: [], userIds: [] })
+  const [pdfUrl, setPdfUrl] = useState('')
+  const [pdfName, setPdfName] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -41,6 +44,8 @@ export default function WikiEditarPage() {
       setCategoryId(page.categoryId ?? '')
       setTags(page.tags ?? [])
       setVis({ buIds: page.buIds ?? [], roleFilter: page.roleFilter ?? [], userIds: page.userIds ?? [] })
+      setPdfUrl(page.pdfUrl ?? '')
+      setPdfName(page.pdfName ?? '')
       setCategories(cats)
       setLoading(false)
     })
@@ -62,7 +67,7 @@ export default function WikiEditarPage() {
       const res = await fetch(`/api/wiki/${slug}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, content, categoryId, tags, ...vis }),
+        body: JSON.stringify({ title, content, categoryId, tags, pdfUrl: pdfUrl || null, pdfName: pdfName || null, ...vis }),
       })
       if (!res.ok) { const d = await res.json(); setError(d.error ?? 'Erro ao salvar'); return }
       const updated = await res.json()
@@ -129,6 +134,12 @@ export default function WikiEditarPage() {
         </div>
 
         <VisibilityConfig value={vis} onChange={setVis} />
+
+        <PdfUpload
+          pdfUrl={pdfUrl}
+          pdfName={pdfName}
+          onChange={(url, name) => { setPdfUrl(url); setPdfName(name) }}
+        />
 
         <RichEditor key={content.length > 0 ? 'loaded' : 'empty'} content={content} onChange={setContent} placeholder="Escreva o conteúdo do artigo..." minHeight={400} />
       </div>

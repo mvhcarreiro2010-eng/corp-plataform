@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { TagInput } from '@/components/ui/TagInput'
 import RichEditor from '@/components/editor/RichEditor'
 import { VisibilityConfig, VisibilityValue } from '@/components/admin/VisibilityConfig'
+import { PdfUpload } from '@/components/wiki/PdfUpload'
 import Link from 'next/link'
 
 type Category = { id: string; name: string; icon: string | null }
@@ -22,6 +23,8 @@ export default function WikiNovoPage() {
   const [categories, setCategories] = useState<Category[]>([])
   const [tags, setTags] = useState<string[]>([])
   const [vis, setVis] = useState<VisibilityValue>({ buIds: [], roleFilter: [], userIds: [] })
+  const [pdfUrl, setPdfUrl] = useState('')
+  const [pdfName, setPdfName] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
@@ -51,7 +54,7 @@ export default function WikiNovoPage() {
       const res = await fetch('/api/wiki', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'page', title, content, categoryId, tags, ...vis }),
+        body: JSON.stringify({ type: 'page', title, content, categoryId, tags, pdfUrl: pdfUrl || null, pdfName: pdfName || null, ...vis }),
       })
       if (!res.ok) { const d = await res.json(); setError(d.error ?? 'Erro ao salvar'); return }
       const page = await res.json()
@@ -102,6 +105,12 @@ export default function WikiNovoPage() {
         </div>
 
         <VisibilityConfig value={vis} onChange={setVis} />
+
+        <PdfUpload
+          pdfUrl={pdfUrl}
+          pdfName={pdfName}
+          onChange={(url, name) => { setPdfUrl(url); setPdfName(name) }}
+        />
 
         <RichEditor
           content={content}
