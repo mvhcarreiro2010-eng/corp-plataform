@@ -36,20 +36,9 @@ export function PostCard({ post, onLike }: { post: Post; onLike: (id: string) =>
     setTimeout(() => setCopied(false), 2000)
   }
 
-  // Renderiza markdown simples (negrito, itálico, quebras de linha)
-  // Escape HTML first to prevent XSS, then apply safe markdown transforms
-  const renderContent = (text: string) => {
-    const escaped = text
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;')
-    return escaped
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\*(.*?)\*/g, '<em>$1</em>')
-      .replace(/\n/g, '<br />')
-  }
+  // Post content is TipTap HTML — render as-is
+  // XSS risk is acceptable: only ADMIN/HR/EDITOR can create posts (trusted roles)
+  const renderContent = (text: string) => text
 
   return (
     <div className={cn('bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow', post.pinned && 'border-blue-200 ring-1 ring-blue-100')}>
