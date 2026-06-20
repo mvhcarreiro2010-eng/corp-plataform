@@ -2,14 +2,18 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
-// GET /api/users/me — Dados completos do usuário logado
+// GET /api/users/me — Dados do usuário logado (sem campos sensíveis)
 export async function GET() {
   const session = await auth()
   if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    include: {
+    select: {
+      id: true, name: true, email: true, role: true,
+      avatar: true, bio: true, jobTitle: true, department: true,
+      xp: true, level: true, regiao: true, admissaoEm: true,
+      bu: { select: { id: true, name: true } },
       badges: { include: { badge: true } },
       progress: {
         where: { completed: true, lessonId: { not: null } },

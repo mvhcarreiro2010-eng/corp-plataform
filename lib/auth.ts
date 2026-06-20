@@ -24,6 +24,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         if (!user) return null
 
+        // Block deactivated accounts before checking password (avoid timing leaks)
+        if (user.ativo === false) return null
+
         const passwordMatch = await bcrypt.compare(
           credentials.password as string,
           user.password

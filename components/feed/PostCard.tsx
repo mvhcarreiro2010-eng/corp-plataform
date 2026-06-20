@@ -37,8 +37,15 @@ export function PostCard({ post, onLike }: { post: Post; onLike: (id: string) =>
   }
 
   // Renderiza markdown simples (negrito, itálico, quebras de linha)
+  // Escape HTML first to prevent XSS, then apply safe markdown transforms
   const renderContent = (text: string) => {
-    return text
+    const escaped = text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;')
+    return escaped
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
       .replace(/\*(.*?)\*/g, '<em>$1</em>')
       .replace(/\n/g, '<br />')

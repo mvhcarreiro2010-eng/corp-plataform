@@ -44,7 +44,11 @@ export async function POST(req: NextRequest) {
     return { name, matricula, cpf, email, senha, bu, regiao, role }
   }).filter(r => r.name && r.email)
 
-  if (preview) return NextResponse.json({ rows, total: rows.length })
+  // Preview: never expose plaintext passwords or CPF in the response
+  if (preview) {
+    const safeRows = rows.map(({ senha: _senha, cpf: _cpf, ...rest }) => rest)
+    return NextResponse.json({ rows: safeRows, total: rows.length })
+  }
 
   // Resolve BU names to IDs
   const buNames = [...new Set(rows.map(r => r.bu).filter(Boolean))]

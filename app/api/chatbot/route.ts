@@ -8,6 +8,18 @@ export async function POST(req: NextRequest) {
 
   const { messages } = await req.json()
 
+  // Guard against abuse: max 20 messages, each max 1000 chars
+  if (!Array.isArray(messages) || messages.length > 20) {
+    return NextResponse.json({ error: 'Limite de mensagens excedido' }, { status: 400 })
+  }
+  const sanitized = messages
+    .filter((m: { role: string; content: string }) =>
+      typeof m.role === 'string' && typeof m.content === 'string')
+    .map((m: { role: string; content: string }) => ({
+      role: m.role === 'assistant' ? 'assistant' : 'user',
+      content: m.content.slice(0, 1000),
+    }))
+
   // Se não tiver a API key, retorna resposta padrão
   if (!process.env.ANTHROPIC_API_KEY) {
     return NextResponse.json({
@@ -36,10 +48,7 @@ Você pode ajudar com:
 
 Se não souber responder, oriente o colaborador a consultar a Wiki ou entrar em contato com o RH.
 Mantenha respostas curtas (máximo 3-4 parágrafos).`,
-        messages: messages.map((m: { role: string; content: string }) => ({
-          role: m.role,
-          content: m.content,
-        })),
+        messages: sanitized,
       }),
     })
 
