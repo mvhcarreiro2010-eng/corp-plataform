@@ -356,3 +356,47 @@ PUSHER_KEY=
 PUSHER_SECRET=
 PUSHER_CLUSTER=
 ```
+
+---
+
+## Segurança — Patches Aplicados (2026-07-24)
+
+Auditoria completa realizada. Os itens abaixo foram corrigidos em produção (commits `00dbd2b` e `1365d02`):
+
+### Regras críticas que NÃO podem ser revertidas
+
+| Arquivo | Regra |
+|---------|-------|
+| `api/users/me/route.ts` | GET usa `select{}` explícito — jamais usar `include` sem `select` no User, pois expõe `password` (hash bcrypt) e `cpf` |
+| `lib/auth.ts` | `authorize()` verifica `user.ativo === false` antes de comparar senha — usuários desativados não podem logar |
+| `api/admin/usuarios/importar/route.ts` | Preview do CSV remove campos `senha` e `cpf` antes de responder |
+| `api/messages/route.ts` | Toda leitura/escrita em canal verifica `canAccessChannel()` — sem esse check, qualquer usuário lê canais privados alheios |
+| `api/chatbot/route.ts` | Máximo 20 mensagens por requisição, 1000 chars por mensagem — sem isso, atacante usa o endpoint para gastar créditos da API |
+| `next.config.ts` | Headers HTTP de segurança obrigatórios: `X-Frame-Options`, `X-Content-Type-Options`, `HSTS`, `Referrer-Policy`, `Permissions-Policy` |
+| `api/admin/export/notas/route.ts` | Função `csvSafe()` sanitiza valores — evita CSV Injection no Excel quando nome/email começa com `=`, `+`, `-`, `@` |
+
+### Padrão de API segura para User
+
+```typescript
+// ✅ CORRETO — nunca expõe password/cpf
+const user = await prisma.user.findUnique({
+  where: { id },
+  select: {
+    id: true, name: true, email: true, role: true,
+    avatar: true, xp: true, level: true,
+    // NÃO incluir: password, cpf, matricula (a menos que seja rota admin)
+  },
+})
+
+// ❌ ERRADO — retorna hash de senha e CPF para o cliente
+const user = await prisma.user.findUnique({
+  where: { id },
+  include: { badges: true },  // include sem select expõe todos os campos do User
+})
+```
+
+### Post content e dangerouslySetInnerHTML
+
+O conteúdo de Posts, Wiki, Cursos e Indução é gerado pelo **TipTap** (HTML rico). Renderizar com `dangerouslySetInnerHTML` é intencional e correto para esses casos — TipTap não permite `<script>` por padrão e os autores são roles confiáveis (ADMIN/HR/EDITOR).
+
+**NÃO** escapar HTML antes de renderizar conteúdo TipTap — quebra iframes, links e formatação.
